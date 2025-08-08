@@ -30,7 +30,12 @@ void setup(void)
 		window_height
 		);
 
-	load_cube_mesh_data();
+	//load_cube_mesh_data();
+	//my_load_obj_file_data("./assets/appa_triangulated.obj");
+	//load_obj_file_data("./assets/cube.obj");
+	//load_obj_file_data("./assets/appa_triangulated.obj");
+	load_obj_file_data("./assets/f22.obj");
+
 
 }
 
@@ -65,6 +70,18 @@ vect2_t project(vect3_t point)
 }
 
 
+vect2_t project_orthographic(vect3_t point)
+{
+	vect2_t projected_point =
+	{
+		.x = (fov_factor * point.x),
+		.y = (fov_factor * point.y)
+	};
+
+	return projected_point;
+}
+
+
 void update(void)
 {
 	//spin locks wweeeeee
@@ -85,8 +102,8 @@ void update(void)
 
 
 	mesh.rotation.x += 0.01;
-	mesh.rotation.y += 0.01;
-	mesh.rotation.z += 0.01;
+	mesh.rotation.y += 0.00;
+	mesh.rotation.z += 0.00;
 
 	int num_faces = array_length(mesh.faces);
 
