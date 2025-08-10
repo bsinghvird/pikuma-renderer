@@ -7,7 +7,7 @@
 triangle_t* triangles_to_render = NULL;
 
 
-vect3_t camera_position = { .x = 0, .y = 0,.z = -5 };
+vect3_t camera_position = { .x = 0, .y = 0,.z = 0 };
 
 
 
@@ -32,10 +32,16 @@ void setup(void)
 
 	//load_cube_mesh_data();
 	//my_load_obj_file_data("./assets/appa_triangulated.obj");
-	//load_obj_file_data("./assets/cube.obj");
+	load_obj_file_data("./assets/cube.obj");
 	//load_obj_file_data("./assets/appa_triangulated.obj");
-	load_obj_file_data("./assets/f22.obj");
+	//load_obj_file_data("./assets/f22.obj");
 
+
+	vect3_t a = { 24.4,13.35,23.1 };
+	vect3_t b = { 12.4,114.46,23.1 };
+
+	vect3_t added = vect3_add(a, b);
+	vect3_t mul = vect3_mul(a, 3.5);
 
 }
 
@@ -82,6 +88,28 @@ vect2_t project_orthographic(vect3_t point)
 }
 
 
+bool my_cull_face(vect3_t a, vect3_t b, vect3_t c)
+{
+
+
+	//my attempt at back face culling
+	vect3_t vector_ab = vect3_sub(b, a);
+	vect3_t vector_ac = vect3_sub(c, a);
+
+	vect3_t normal = vect3_cross(vector_ab, vector_ac);
+
+
+	//I pretty much had it right, but I had these swapped around 
+	vect3_t camera_ray = vect3_sub(camera_position, a);
+
+	float dot = vect3_dot(camera_ray, normal);
+
+
+	return dot < 0;
+
+}
+
+
 void update(void)
 {
 	//spin locks wweeeeee
@@ -102,8 +130,8 @@ void update(void)
 
 
 	mesh.rotation.x += 0.01;
-	mesh.rotation.y += 0.00;
-	mesh.rotation.z += 0.00;
+	mesh.rotation.y += 0.01;
+	mesh.rotation.z += 0.01;
 
 	int num_faces = array_length(mesh.faces);
 
@@ -116,8 +144,10 @@ void update(void)
 		face_vertices[1] = mesh.vertices[mesh_face.b - 1];
 		face_vertices[2] = mesh.vertices[mesh_face.c - 1];
 
-
 		triangle_t projected_triangle;
+
+		vect3_t transformed_vertices[3];
+
 
 		for (int j = 0; j < 3; j++)
 		{
@@ -126,18 +156,67 @@ void update(void)
 			transformed_vertex = vec3_rotate_x(transformed_vertex, mesh.rotation.x);
 			transformed_vertex = vec3_rotate_y(transformed_vertex, mesh.rotation.y);
 			transformed_vertex = vec3_rotate_z(transformed_vertex, mesh.rotation.z);
-			transformed_vertex.z -= camera_position.z;
+			transformed_vertex.z += 5;
 
-			transformed_vertex.z -= camera_position.z;
+			//transformed_vertex.z -= camera_position.z;
 
-			vect2_t projected_point = project(transformed_vertex);
+			transformed_vertices[j] = transformed_vertex;
+
+		}
+
+
+		vect3_t vector_a = transformed_vertices[0];
+		vect3_t vector_b = transformed_vertices[1];
+		vect3_t vector_c = transformed_vertices[2];
+
+
+		vect3_t vector_ab = vect3_sub(vector_b, vector_a);
+		vect3_t vector_ac = vect3_sub(vector_c, vector_a);
+		vect3_normalize(&vector_ab);
+		vect3_normalize(&vector_ac);
+
+		vect3_t normal = vect3_cross(vector_ab, vector_ac);
+		vect3_normalize(&normal);
+
+		vect3_t camera_ray = vect3_sub(camera_position, vector_a);
+
+		float dot_normal_camera = vect3_dot(normal, camera_ray);
+
+
+		if (dot_normal_camera < 0)
+		{
+			continue;
+		}
+
+
+
+		//if (my_cull_face(vector_a, vector_b, vector_c))
+		//{
+		//	continue;
+		//}
+
+		for (int j = 0; j < 3; j++)
+		{
+			vect2_t projected_point = project(transformed_vertices[j]);
 
 			projected_point.x += (window_width / 2),
 			projected_point.y += (window_height / 2),
 
 			projected_triangle.points[j] = projected_point;
 
+			
 		}
+
+
+
+	/*	if (cull_face(face_vertices[0], face_vertices[1], face_vertices[2]))
+		{
+			continue;
+		}*/
+
+
+
+
 
 		array_push(triangles_to_render, projected_triangle);
 
