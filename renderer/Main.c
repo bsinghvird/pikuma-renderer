@@ -11,9 +11,15 @@ vect3_t camera_position = { .x = 0, .y = 0,.z = 0 };
 
 
 
+
+enum Render_mode selected_render_mode = RENDER_FILLED_TRIANGLES_SOLID_COLOR;
+enum cull_mode selected_cull_mode = CULL_BACKFACE;
+
 float fov_factor = 640;
 
 bool is_running = false;
+
+
 int previous_frame_time = 0;
 
 void setup(void)
@@ -30,18 +36,11 @@ void setup(void)
 		window_height
 		);
 
-	//load_cube_mesh_data();
+	load_cube_mesh_data();
 	//my_load_obj_file_data("./assets/appa_triangulated.obj");
-	load_obj_file_data("./assets/cube.obj");
+	//load_obj_file_data("./assets/cube.obj");
 	//load_obj_file_data("./assets/appa_triangulated.obj");
 	//load_obj_file_data("./assets/f22.obj");
-
-
-	vect3_t a = { 24.4,13.35,23.1 };
-	vect3_t b = { 12.4,114.46,23.1 };
-
-	vect3_t added = vect3_add(a, b);
-	vect3_t mul = vect3_mul(a, 3.5);
 
 }
 
@@ -49,7 +48,6 @@ void process_input(void)
 {
 	SDL_Event event;
 	SDL_PollEvent(&event);
-
 	switch (event.type)
 	{
 		case SDL_QUIT:
@@ -58,7 +56,21 @@ void process_input(void)
 		case SDL_KEYDOWN:
 			if (event.key.keysym.sym == SDLK_ESCAPE)
 				is_running = false;
+			else if (event.key.keysym.sym == SDLK_1)
+				selected_render_mode = RENDER_WIREFRAME_AND_RED_DOT_VERTEX;
+		
+			else if (event.key.keysym.sym == SDLK_2)
+				selected_render_mode = RENDER_WIREFRAME;
+			else if (event.key.keysym.sym == SDLK_3)
+				selected_render_mode = RENDER_FILLED_TRIANGLES_SOLID_COLOR;
+			else if (event.key.keysym.sym == SDLK_4)
+				selected_render_mode = RENDER_FILLED_AND_WIREFRAME;
+			else if (event.key.keysym.sym == SDLK_c)
+				selected_cull_mode = CULL_BACKFACE;
+			else if (event.key.keysym.sym == SDLK_d)
+				selected_cull_mode = CULL_NONE;
 			break;
+			
 	}
 
 }
@@ -144,7 +156,7 @@ void update(void)
 		face_vertices[1] = mesh.vertices[mesh_face.b - 1];
 		face_vertices[2] = mesh.vertices[mesh_face.c - 1];
 
-		triangle_t projected_triangle;
+		
 
 		vect3_t transformed_vertices[3];
 
@@ -164,57 +176,67 @@ void update(void)
 
 		}
 
-
-		vect3_t vector_a = transformed_vertices[0];
-		vect3_t vector_b = transformed_vertices[1];
-		vect3_t vector_c = transformed_vertices[2];
-
-
-		vect3_t vector_ab = vect3_sub(vector_b, vector_a);
-		vect3_t vector_ac = vect3_sub(vector_c, vector_a);
-		vect3_normalize(&vector_ab);
-		vect3_normalize(&vector_ac);
-
-		vect3_t normal = vect3_cross(vector_ab, vector_ac);
-		vect3_normalize(&normal);
-
-		vect3_t camera_ray = vect3_sub(camera_position, vector_a);
-
-		float dot_normal_camera = vect3_dot(normal, camera_ray);
-
-
-		if (dot_normal_camera < 0)
+		if (selected_cull_mode == CULL_BACKFACE)
 		{
-			continue;
-		}
+			vect3_t vector_a = transformed_vertices[0];
+			vect3_t vector_b = transformed_vertices[1];
+			vect3_t vector_c = transformed_vertices[2];
 
+
+			vect3_t vector_ab = vect3_sub(vector_b, vector_a);
+			vect3_t vector_ac = vect3_sub(vector_c, vector_a);
+			vect3_normalize(&vector_ab);
+			vect3_normalize(&vector_ac);
+
+			vect3_t normal = vect3_cross(vector_ab, vector_ac);
+			vect3_normalize(&normal);
+
+			vect3_t camera_ray = vect3_sub(camera_position, vector_a);
+
+			float dot_normal_camera = vect3_dot(normal, camera_ray);
+
+
+			if (dot_normal_camera < 0)
+			{
+				continue;
+			}
+		}
 
 
 		//if (my_cull_face(vector_a, vector_b, vector_c))
 		//{
 		//	continue;
 		//}
+		
+
+
+		vect2_t projected_points[3];
 
 		for (int j = 0; j < 3; j++)
 		{
-			vect2_t projected_point = project(transformed_vertices[j]);
 
-			projected_point.x += (window_width / 2),
-			projected_point.y += (window_height / 2),
+			projected_points[j] =  project(transformed_vertices[j]);
 
-			projected_triangle.points[j] = projected_point;
+			projected_points[j].x += (window_width / 2);
+			projected_points[j].y += (window_height / 2);
 
 			
 		}
 
 
+		float avg_depth = (transformed_vertices[0].z + transformed_vertices[1].z + transformed_vertices[2].z) / 3.0;
 
-	/*	if (cull_face(face_vertices[0], face_vertices[1], face_vertices[2]))
+
+		triangle_t projected_triangle =
 		{
-			continue;
-		}*/
-
-
+			.points = {
+				{projected_points[0].x, projected_points[0].y},
+				{projected_points[1].x, projected_points[1].y},
+				{projected_points[2].x, projected_points[2].y}
+			},
+			.color = mesh_face.color,
+			.avg_depth = avg_depth
+		};
 
 
 
@@ -222,6 +244,23 @@ void update(void)
 
 
 	}
+
+	int num_triangles_to_render = array_length(triangles_to_render);
+
+
+	for (int i = 0; i < num_triangles_to_render; i++)
+	{
+		for (int j = i; j < num_triangles_to_render; j++)
+		{
+			if (triangles_to_render[i].avg_depth < triangles_to_render[j].avg_depth) {
+
+				triangle_t temp = triangles_to_render[i];
+				triangles_to_render[i] = triangles_to_render[j];
+				triangles_to_render[j] = temp;
+			}
+		}
+	}
+
 
 }
 
@@ -234,25 +273,55 @@ void render()
 
 	int num_triangles = array_length(triangles_to_render);
 
-	for (int i = 0; i < num_triangles; i++)
-	{
+	for (int i = 0; i < num_triangles; i++) {
 		triangle_t triangle = triangles_to_render[i];
 
-		draw_rect(triangle.points[0].x, triangle.points[0].y, 3, 3, 0xffffff00);
-		draw_rect(triangle.points[1].x, triangle.points[1].y, 3, 3, 0xffffff00);
-		draw_rect(triangle.points[2].x, triangle.points[2].y, 3, 3, 0xffffff00);
+		uint32_t wire_color = 0xff0000ff;
+		uint32_t fill_color = 0xFFF78228;
 
-		draw_triangle(&triangle, 0xffff3300);
+		if (selected_render_mode == RENDER_WIREFRAME_AND_RED_DOT_VERTEX)
+		{
+			draw_triangle(&triangle, wire_color);
+			draw_rect(triangle.points[0].x-3, triangle.points[0].y-3, 6, 6, 0xffff0000);
+			draw_rect(triangle.points[1].x-3, triangle.points[1].y-3, 6, 6, 0xffff0000);
+			draw_rect(triangle.points[2].x-3, triangle.points[2].y, 6, 6, 0xffff0000);
+	
+		}
+		else if (selected_render_mode == RENDER_WIREFRAME)
+		{
+			draw_triangle(&triangle, wire_color);
+		}
+		else if (selected_render_mode == RENDER_FILLED_TRIANGLES_SOLID_COLOR)
+		{
+			draw_filled_triangle(&triangle, triangle.color);
+		}
+		else if (selected_render_mode == RENDER_FILLED_AND_WIREFRAME)
+		{
+			draw_filled_triangle(&triangle, triangle.color);
 
-/*		draw_triangle_points(
-			triangle.points[0].x,
-			triangle.points[0].y,
-			triangle.points[1].x,
-			triangle.points[1].y,
-			triangle.points[2].x,
-			triangle.points[2].y,
-			0xffff3300);*/		
+			draw_triangle(&triangle, wire_color);
+		}
 
+
+		/*draw_filled_triangle(&triangle, 0xff113300);
+
+		draw_triangle(&triangle, 0xffff3300);*/
+
+		// Draw filled triangle
+		//draw_filled_triangle_points(
+		//	triangle.points[0].x, triangle.points[0].y, // vertex A
+		//	triangle.points[1].x, triangle.points[1].y, // vertex B
+		//	triangle.points[2].x, triangle.points[2].y, // vertex C
+		//	
+		//);
+
+		//// Draw unfilled triangle
+		//draw_triangle_points(
+		//	triangle.points[0].x, triangle.points[0].y, // vertex A
+		//	triangle.points[1].x, triangle.points[1].y, // vertex B
+		//	triangle.points[2].x, triangle.points[2].y, // vertex C
+		//	0xFF000000
+		//);
 	}
 
 
@@ -264,7 +333,6 @@ void render()
 
 	SDL_RenderPresent(renderer);
 }
-
 
 void free_resources(void)
 {
