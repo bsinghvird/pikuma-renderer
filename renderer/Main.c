@@ -4,6 +4,7 @@
 #include "mesh.h"
 #include "array.h"
 #include "matrix.h"
+#include "light.h"
 
 triangle_t* triangles_to_render = NULL;
 
@@ -23,6 +24,12 @@ bool is_running = false;
 
 int previous_frame_time = 0;
 
+
+mat4_t projection_matrix;
+
+
+light_t light_source;
+
 void setup(void)
 {
 	//allocate the required memory in bytes to hold the color buffer
@@ -37,11 +44,24 @@ void setup(void)
 		window_height
 		);
 
-	load_cube_mesh_data();
+
+
+	float fov = M_PI / 3.0; //radians wooo 60 degrees
+	float aspect_ratio = (float) window_height / (float) window_width;
+	float znear = 0.1;
+	float zfar = 100.0;
+
+	projection_matrix = mat4_make_perspective(fov, aspect_ratio, znear, zfar);
+
+	light_source.direction.x = 0 ;
+	light_source.direction.y = 0;
+	light_source.direction.z = 1;
+
+	//load_cube_mesh_data();
 	//my_load_obj_file_data("./assets/appa_triangulated.obj");
 	//load_obj_file_data("./assets/cube.obj");
 	//load_obj_file_data("./assets/appa_triangulated.obj");
-	//load_obj_file_data("./assets/f22.obj");
+	load_obj_file_data("./assets/f22.obj");
 
 }
 
@@ -123,6 +143,42 @@ bool my_cull_face(vect3_t a, vect3_t b, vect3_t c)
 }
 
 
+//this works fine, but end up calculating all these vectors twice since these are the same steps done for backface culling
+//for better performance (though who knows actually how much better in reality), this function is not called and is done manually in the update function instead
+float calculate_light_intesnity(vect4_t *transformed_vertices)
+{
+	float intensity = 0;
+
+
+	vect3_t vector_a = vec3_from_vec4(transformed_vertices[0]);
+	vect3_t vector_b = vec3_from_vec4(transformed_vertices[1]);
+	vect3_t vector_c = vec3_from_vec4(transformed_vertices[2]);
+
+
+	vect3_t vector_ab = vect3_sub(vector_b, vector_a);
+	vect3_t vector_ac = vect3_sub(vector_c, vector_a);
+	vect3_normalize(&vector_ab);
+	vect3_normalize(&vector_ac);
+
+	vect3_t normal = vect3_cross(vector_ab, vector_ac);
+	vect3_normalize(&normal);
+
+	vect3_normalize(&light_source.direction);
+
+	float dot = -vect3_dot(light_source.direction, normal);
+
+	intensity = dot;
+
+	if (dot < 0.0)
+	{
+		intensity = 0;
+
+	}
+
+	return intensity;
+}
+
+
 void update(void)
 {
 	//spin locks wweeeeee
@@ -143,13 +199,13 @@ void update(void)
 
 
 	mesh.rotation.x += 0.01;
-	mesh.rotation.y += 0.01;
-	mesh.rotation.z += 0.01;
+	//mesh.rotation.y += 0.01;
+	//mesh.rotation.z += 0.01;
 
-	mesh.scale.x += 0.002;
-	mesh.scale.y += 0.001;
+	//mesh.scale.x += 0.002;
+	//mesh.scale.y += 0.001;
 
-	mesh.translation.x += 0.01;
+	//mesh.translation.x += 0.01;
 	mesh.translation.z = 5.0;
 
 	mat4_t scale_matrix = mat4_make_scale(mesh.scale.x, mesh.scale.y, mesh.scale.z);
@@ -195,25 +251,27 @@ void update(void)
 
 		}
 
+
+		vect3_t vector_a = vec3_from_vec4(transformed_vertices[0]);
+		vect3_t vector_b = vec3_from_vec4(transformed_vertices[1]);
+		vect3_t vector_c = vec3_from_vec4(transformed_vertices[2]);
+
+
+		vect3_t vector_ab = vect3_sub(vector_b, vector_a);
+		vect3_t vector_ac = vect3_sub(vector_c, vector_a);
+		vect3_normalize(&vector_ab);
+		vect3_normalize(&vector_ac);
+
+		vect3_t normal = vect3_cross(vector_ab, vector_ac);
+		vect3_normalize(&normal);
+
+		vect3_t camera_ray = vect3_sub(camera_position, vector_a);
+
+		float dot_normal_camera = vect3_dot(normal, camera_ray);
+
+
 		if (selected_cull_mode == CULL_BACKFACE)
 		{
-			vect3_t vector_a = vec3_from_vec4(transformed_vertices[0]);
-			vect3_t vector_b = vec3_from_vec4(transformed_vertices[1]);
-			vect3_t vector_c = vec3_from_vec4(transformed_vertices[2]);
-
-
-			vect3_t vector_ab = vect3_sub(vector_b, vector_a);
-			vect3_t vector_ac = vect3_sub(vector_c, vector_a);
-			vect3_normalize(&vector_ab);
-			vect3_normalize(&vector_ac);
-
-			vect3_t normal = vect3_cross(vector_ab, vector_ac);
-			vect3_normalize(&normal);
-
-			vect3_t camera_ray = vect3_sub(camera_position, vector_a);
-
-			float dot_normal_camera = vect3_dot(normal, camera_ray);
-
 
 			if (dot_normal_camera < 0)
 			{
@@ -227,24 +285,49 @@ void update(void)
 		//	continue;
 		//}
 		
+		
 
-
-		vect2_t projected_points[3];
+		vect4_t projected_points[3];
 
 		for (int j = 0; j < 3; j++)
 		{
 
-			projected_points[j] =  project(vec3_from_vec4(transformed_vertices[j]));
+			projected_points[j] = mat4_mul_vec4_project(projection_matrix, transformed_vertices[j]);
 
-			projected_points[j].x += (window_width / 2);
-			projected_points[j].y += (window_height / 2);
+			//scale into view
+			projected_points[j].x *= (window_width / 2.0);
+			projected_points[j].y *= (window_height / 2.0);
 
+			//projected_points[j].x *= -1;
+			projected_points[j].y *= -1;
+
+
+			//translate into view
+			projected_points[j].x += (window_width / 2.0);
+			projected_points[j].y += (window_height / 2.0);
+
+			
 			
 		}
 
 
 		float avg_depth = (transformed_vertices[0].z + transformed_vertices[1].z + transformed_vertices[2].z) / 3.0;
 
+
+		vect3_normalize(&light_source.direction);
+
+		float light_intensity_factor = -vect3_dot(light_source.direction, normal);
+
+
+		if (light_intensity_factor < 0.0)
+		{
+			light_intensity_factor = 0.0;
+
+		}
+
+		//float light_intensity_factor = calculate_light_intesnity(transformed_vertices);
+
+		uint32_t triangle_color = light_apply_intensity(mesh_face.color, light_intensity_factor);
 
 		triangle_t projected_triangle =
 		{
@@ -253,7 +336,7 @@ void update(void)
 				{projected_points[1].x, projected_points[1].y},
 				{projected_points[2].x, projected_points[2].y}
 			},
-			.color = mesh_face.color,
+			.color = triangle_color,
 			.avg_depth = avg_depth
 		};
 
