@@ -5,6 +5,8 @@
 #include "array.h"
 #include "matrix.h"
 #include "light.h"
+#include "texture.h"
+#include "triangle.h"
 
 triangle_t* triangles_to_render = NULL;
 
@@ -57,11 +59,16 @@ void setup(void)
 	light_source.direction.y = 0;
 	light_source.direction.z = 1;
 
-	//load_cube_mesh_data();
+	mesh_texture = (uint32_t*) REDBRICK_TEXTURE;
+	texture_width = 64;
+	texture_height = 64;
+
+
+	load_cube_mesh_data();
 	//my_load_obj_file_data("./assets/appa_triangulated.obj");
 	//load_obj_file_data("./assets/cube.obj");
 	//load_obj_file_data("./assets/appa_triangulated.obj");
-	load_obj_file_data("./assets/f22.obj");
+	//load_obj_file_data("./assets/f22.obj");
 
 }
 
@@ -79,13 +86,17 @@ void process_input(void)
 				is_running = false;
 			else if (event.key.keysym.sym == SDLK_1)
 				selected_render_mode = RENDER_WIREFRAME_AND_RED_DOT_VERTEX;
-		
+
 			else if (event.key.keysym.sym == SDLK_2)
 				selected_render_mode = RENDER_WIREFRAME;
 			else if (event.key.keysym.sym == SDLK_3)
 				selected_render_mode = RENDER_FILLED_TRIANGLES_SOLID_COLOR;
 			else if (event.key.keysym.sym == SDLK_4)
 				selected_render_mode = RENDER_FILLED_AND_WIREFRAME;
+			else if (event.key.keysym.sym == SDLK_5)
+				selected_render_mode = RENDER_TEXTURED;
+			else if (event.key.keysym.sym == SDLK_6)
+				selected_render_mode = RENDER_TEXTURED_AND_WIREFRAME;
 			else if (event.key.keysym.sym == SDLK_c)
 				selected_cull_mode = CULL_BACKFACE;
 			else if (event.key.keysym.sym == SDLK_d)
@@ -206,7 +217,7 @@ void update(void)
 	//mesh.scale.y += 0.001;
 
 	//mesh.translation.x += 0.01;
-	mesh.translation.z = 5.0;
+	mesh.translation.z = 5;
 
 	mat4_t scale_matrix = mat4_make_scale(mesh.scale.x, mesh.scale.y, mesh.scale.z);
 	mat4_t translation_matrix = mat4_make_translation(mesh.translation.x, mesh.translation.y, mesh.translation.z);
@@ -336,6 +347,11 @@ void update(void)
 				{projected_points[1].x, projected_points[1].y},
 				{projected_points[2].x, projected_points[2].y}
 			},
+			.texcoords = {
+				{mesh_face.a_uv.u, mesh_face.a_uv.v},
+				{mesh_face.b_uv.u, mesh_face.b_uv.v},
+				{mesh_face.c_uv.u, mesh_face.c_uv.v},
+			},
 			.color = triangle_color,
 			.avg_depth = avg_depth
 		};
@@ -401,6 +417,18 @@ void render()
 		{
 			draw_filled_triangle(&triangle, triangle.color);
 
+			draw_triangle(&triangle, wire_color);
+		}
+		else if (selected_render_mode == RENDER_TEXTURED)
+		{
+
+			draw_textured_triangle(&triangle, mesh_texture);
+
+			
+		}
+		else if (selected_render_mode == RENDER_TEXTURED_AND_WIREFRAME)
+		{
+			draw_textured_triangle(&triangle, mesh_texture);
 			draw_triangle(&triangle, wire_color);
 		}
 
