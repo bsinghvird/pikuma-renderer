@@ -365,7 +365,7 @@ void update(void)
 
 	int num_triangles_to_render = array_length(triangles_to_render);
 
-
+	//bubble sort the triangles based on depth
 	for (int i = 0; i < num_triangles_to_render; i++)
 	{
 		for (int j = i; j < num_triangles_to_render; j++)
