@@ -40,7 +40,7 @@ void setup(void)
 	//creatning an SDL texture that is used to display the color buffer
 	color_buffer_texture = SDL_CreateTexture(
 		renderer,
-		SDL_PIXELFORMAT_ARGB8888,
+		SDL_PIXELFORMAT_RGBA32,
 		SDL_TEXTUREACCESS_STREAMING,
 		window_width,
 		window_height
@@ -59,16 +59,20 @@ void setup(void)
 	light_source.direction.y = 0;
 	light_source.direction.z = 1;
 
-	mesh_texture = (uint32_t*) REDBRICK_TEXTURE;
+	/*mesh_texture = (uint32_t*) REDBRICK_TEXTURE;
 	texture_width = 64;
-	texture_height = 64;
+	texture_height = 64;*/
 
 
 	load_cube_mesh_data();
+	load_png_texture_data("./assets/cube.png");
 	//my_load_obj_file_data("./assets/appa_triangulated.obj");
 	//load_obj_file_data("./assets/cube.obj");
 	//load_obj_file_data("./assets/appa_triangulated.obj");
 	//load_obj_file_data("./assets/f22.obj");
+
+	
+
 
 }
 
@@ -432,26 +436,6 @@ void render()
 			draw_triangle(&triangle, wire_color);
 		}
 
-
-		/*draw_filled_triangle(&triangle, 0xff113300);
-
-		draw_triangle(&triangle, 0xffff3300);*/
-
-		// Draw filled triangle
-		//draw_filled_triangle_points(
-		//	triangle.points[0].x, triangle.points[0].y, // vertex A
-		//	triangle.points[1].x, triangle.points[1].y, // vertex B
-		//	triangle.points[2].x, triangle.points[2].y, // vertex C
-		//	
-		//);
-
-		//// Draw unfilled triangle
-		//draw_triangle_points(
-		//	triangle.points[0].x, triangle.points[0].y, // vertex A
-		//	triangle.points[1].x, triangle.points[1].y, // vertex B
-		//	triangle.points[2].x, triangle.points[2].y, // vertex C
-		//	0xFF000000
-		//);
 	}
 
 
@@ -469,6 +453,7 @@ void free_resources(void)
 	free(color_buffer);
 	array_free(mesh.faces);
 	array_free(mesh.vertices);
+	free(png_texture);
 }
 
 int main(int argc, char* args[])

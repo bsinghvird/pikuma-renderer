@@ -144,7 +144,7 @@ void draw_texel(
 	}
 
 
-	uint32_t color = texture[(texture_width * tex_y) + tex_x];
+	uint32_t color = texture[texture_index];
 
 	draw_pixel(x, y, color);
 }
