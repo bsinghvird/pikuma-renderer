@@ -37,7 +37,7 @@ void setup(void)
 	//allocate the required memory in bytes to hold the color buffer
 	color_buffer = (uint32_t*)malloc(sizeof(uint32_t) * window_width * window_height);
 
-	//creatning an SDL texture that is used to display the color buffer
+	//creating an SDL texture that is used to display the color buffer
 	color_buffer_texture = SDL_CreateTexture(
 		renderer,
 		SDL_PIXELFORMAT_RGBA32,
@@ -64,14 +64,26 @@ void setup(void)
 	texture_height = 64;*/
 
 
-	load_cube_mesh_data();
-	load_png_texture_data("./assets/cube.png");
-	//my_load_obj_file_data("./assets/appa_triangulated.obj");
+	//load_cube_mesh_data();
 	//load_obj_file_data("./assets/cube.obj");
+	//load_png_texture_data("./assets/cube.png");
+	//my_load_obj_file_data("./assets/appa_triangulated.obj");
+
 	//load_obj_file_data("./assets/appa_triangulated.obj");
 	//load_obj_file_data("./assets/f22.obj");
+	//load_png_texture_data("./assets/f22.png");
 
-	
+	load_obj_file_data("./assets/drone.obj");
+	load_png_texture_data("./assets/drone.png");
+
+	//load_obj_file_data("./assets/f117.obj");
+	//load_png_texture_data("./assets/f117.png");
+
+	//load_obj_file_data("./assets/efa.obj");
+	//load_png_texture_data("./assets/efa.png");
+
+	//load_obj_file_data("./assets/crab.obj");
+	//load_png_texture_data("./assets/crab.png");
 
 
 }
@@ -236,9 +248,9 @@ void update(void)
 		face_t mesh_face = mesh.faces[i];
 
 		vect3_t face_vertices[3];
-		face_vertices[0] = mesh.vertices[mesh_face.a - 1];
-		face_vertices[1] = mesh.vertices[mesh_face.b - 1];
-		face_vertices[2] = mesh.vertices[mesh_face.c - 1];
+		face_vertices[0] = mesh.vertices[mesh_face.a];
+		face_vertices[1] = mesh.vertices[mesh_face.b];
+		face_vertices[2] = mesh.vertices[mesh_face.c];
 
 		
 

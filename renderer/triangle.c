@@ -133,15 +133,16 @@ void draw_texel(
 	interpolated_v /= interpolated_reciprocal_w;
 
 	//uvs are float values between 0 and 1, so we need to scale by the texture width to get a number within the texture arraay
-	int tex_x = abs((int)(interpolated_u * texture_width));
-	int tex_y = abs((int)(interpolated_v * texture_height));
+	int tex_x = abs((int)(interpolated_u * texture_width)) % texture_width;
+	int tex_y = abs((int)(interpolated_v * texture_height)) % texture_height;
 
-	int texture_index = (texture_width * tex_y) + tex_x;
 
-	if (texture_index >= texture_height * texture_width)
+	int texture_index = ((texture_width * tex_y) + tex_x);
+
+	/*if (texture_index >= texture_height * texture_width)
 	{
 		return;
-	}
+	}*/
 
 
 	uint32_t color = texture[texture_index];
@@ -222,6 +223,10 @@ void draw_textured_triangle_points(
 		float_swap(&v0, &v1);
 	}
 
+
+	v0 = 1 - v0;
+	v1 = 1 - v1;
+	v2 = 1 - v2;
 
 
 	//create vector points and texture coordinates
