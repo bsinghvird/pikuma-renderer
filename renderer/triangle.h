@@ -21,7 +21,6 @@ typedef struct
 	vect4_t points[3];
 	tex2_t texcoords[3];//where each point is on the 0-1 UV map
 	uint32_t color;
-	float avg_depth;
 } triangle_t;
 
 
@@ -31,7 +30,11 @@ vect3_t barycentric_weights(vect2_t a, vect2_t b, vect2_t c, vect2_t p);
 
 void draw_filled_triangle(triangle_t *triangle, uint32_t color);
 
-void draw_filled_triangle_points(int x0, int y0, int x1, int y1, int x2, int y2, uint32_t color);
+void draw_filled_triangle_points(
+	int x0, int y0, float z0, float w0,
+	int x1, int y1, float z1, float w1,
+	int x2, int y2, float z2, float w2,
+	uint32_t color);
 
 
 void fill_flat_bottom_triangle(int x0, int y0, int x1, int y1, int Mx, int My, uint32_t color);
@@ -43,6 +46,15 @@ void draw_texel(
 	int x, int y, uint32_t* texture,
 	vect4_t point_a, vect4_t point_b, vect4_t point_c,
 	tex2_t a_uv, tex2_t b_uv, tex2_t c_uv);
+
+void draw_triangle_pixel(
+	int x, int y,
+	vect4_t point_a, vect4_t point_b, vect4_t point_c,
+	uint32_t color);
+
+
+
+
 
 void draw_textured_triangle(triangle_t* triangle, uint32_t* texture);
 

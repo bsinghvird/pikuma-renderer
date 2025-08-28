@@ -147,7 +147,60 @@ void draw_texel(
 
 	uint32_t color = texture[texture_index];
 
-	draw_pixel(x, y, color);
+	int buffer_index = (window_width * y) + x;
+
+	//adjust 1/w so the pixels that are closer to the camera have smaller values
+	interpolated_reciprocal_w = 1.0 - interpolated_reciprocal_w;
+
+
+	//only draw pixel if depth value is less than the one previously stored in z buffer
+	if (interpolated_reciprocal_w < z_buffer[buffer_index])
+	{
+		draw_pixel(x, y, color);
+		z_buffer[buffer_index] = interpolated_reciprocal_w;
+
+	}
+
+
+	
+
+}
+
+void draw_triangle_pixel(
+	int x, int y,
+	vect4_t point_a, vect4_t point_b, vect4_t point_c,
+	uint32_t color)
+{
+	vect2_t p = { x,y };
+	vect2_t a = vec2_from_vec4(point_a);
+	vect2_t b = vec2_from_vec4(point_b);
+	vect2_t c = vec2_from_vec4(point_c);
+
+	vect3_t weights = barycentric_weights(a, b, c, p);
+
+	float alpha = weights.x;
+	float beta = weights.y;
+	float gamma = weights.z;
+
+	float interpolated_reciprocal_w; //"1/w"
+
+
+	//interpolate the value of 1/w for the current pixel
+	interpolated_reciprocal_w = ((1 / point_a.w) * alpha) + ((1 / point_b.w) * beta) + ((1 / point_c.w) * gamma);
+
+	//adjust 1/w so the pixels that are closer to the camera have smaller values
+	interpolated_reciprocal_w = 1.0 - interpolated_reciprocal_w;
+
+	int buffer_index = (window_width * y) + x;
+
+	//only draw pixel if depth value is less than the one previously stored in z buffer
+	if (interpolated_reciprocal_w < z_buffer[buffer_index])
+	{
+		draw_pixel(x, y, color);
+		z_buffer[buffer_index] = interpolated_reciprocal_w;
+
+	}
+
 }
 
 
@@ -317,61 +370,123 @@ void draw_filled_triangle(triangle_t *triangle, uint32_t color)
 	draw_filled_triangle_points(
 		triangle->points[0].x,
 		triangle->points[0].y,
+		triangle->points[0].z,
+		triangle->points[0].w,
 		triangle->points[1].x,
 		triangle->points[1].y,
+		triangle->points[1].z,
+		triangle->points[1].w,
 		triangle->points[2].x,
 		triangle->points[2].y,
+		triangle->points[2].z,
+		triangle->points[2].w,
 		color);
 
 }
 
-void draw_filled_triangle_points(int x0, int y0, int x1, int y1, int x2, int y2, uint32_t color)
+void draw_filled_triangle_points(
+	int x0, int y0, float z0, float w0,
+	int x1, int y1, float z1, float w1,
+	int x2, int y2, float z2, float w2,
+	uint32_t color)
 {
-	//look it's bubble sort but super manual for exactly three things
 	if (y0 > y1)
 	{
 		int_swap(&y0, &y1);
 		int_swap(&x0, &x1);
+
+		float_swap(&z0, &z1);
+		float_swap(&w0, &w1);
+
 	}
 
 	if (y1 > y2)
 	{
 		int_swap(&y1, &y2);
 		int_swap(&x1, &x2);
-	
+
+		float_swap(&z1, &z2);
+		float_swap(&w1, &w2);
+
 	}
 
 	if (y0 > y1)
 	{
 		int_swap(&y0, &y1);
 		int_swap(&x0, &x1);
+
+		float_swap(&z0, &z1);
+		float_swap(&w0, &w1);
+
 	}
 
 
-	//avoiding division by 0, in the case there is no "top" or "bottom" of the triangle, so only need to draw the one part. 
-	if (y1 == y2)
+	//create vector points and texture coordinates
+	vect4_t point_a = { x0, y0, z0, w0 };
+	vect4_t point_b = { x1, y1, z1, w1 };
+	vect4_t point_c = { x2, y2, z2, w2 };
+
+	//render upper part of the triangle (flat bottom)
+	float inv_slope_1 = 0;
+	float inv_slope_2 = 0;
+
+	if (y1 != y0) inv_slope_1 = (float)(x1 - x0) / abs(y1 - y0);
+	if (y2 != y0) inv_slope_2 = (float)(x2 - x0) / abs(y2 - y0);
+
+	if (y1 != y0)
 	{
-		fill_flat_bottom_triangle(x0, y0, x1, y1, x2, y2, color);
+		for (int y = y0; y <= y1; y++)
+		{
+			int x_start = x1 + (y - y1) * inv_slope_1;
+			int x_end = x0 + (y - y0) * inv_slope_2;
+
+
+			if (x_end < x_start)
+			{
+				int_swap(&x_end, &x_start);
+			}
+
+			for (int x = x_start; x <= x_end; x++)
+			{
+				draw_triangle_pixel(x, y, point_a, point_b, point_c, color);
+			}
+
+
+		}
 	}
-	else if (y0 == y1)
+
+
+	//draw bottom part of triangle 
+
+
+
+	inv_slope_1 = 0;
+	inv_slope_2 = 0;
+	//inv_slope2 is the same as above so it does not need to be calculated again but the video does so here we are
+
+	if (y2 != y1) inv_slope_1 = (float)(x2 - x1) / abs(y2 - y1);
+	if (y2 != y0) inv_slope_2 = (float)(x2 - x0) / abs(y2 - y0);
+
+	if (y2 != y1)
 	{
-		fill_flat_top_triangle(x0, y0, x1, y1, x2, y2, color);
+		for (int y = y1; y <= y2; y++)
+		{
+			int x_start = x1 + (y - y1) * inv_slope_1;
+			int x_end = x0 + (y - y0) * inv_slope_2;
+
+
+			if (x_end < x_start)
+			{
+				int_swap(&x_end, &x_start);
+			}
+
+			for (int x = x_start; x <= x_end; x++)
+			{
+				draw_triangle_pixel(x, y, point_a, point_b, point_c, color);
+			}
+
+		}
 	}
-	else
-	{
-		//calculate mx my using triangle simularity
-
-		int My = y1;
-
-		int Mx = ((float)((x2 - x0) * (y1 - y0)) / (float)(y2 - y0)) + x0;
-
-
-		fill_flat_bottom_triangle(x0, y0, x1, y1, Mx, My, color);
-
-		fill_flat_top_triangle(x1, y1, Mx, My, x2, y2, color);
-	}
-
-
 
 
 	

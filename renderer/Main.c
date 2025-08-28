@@ -8,13 +8,14 @@
 #include "texture.h"
 #include "triangle.h"
 
-triangle_t* triangles_to_render = NULL;
+#define MAX_TRIANGLES_PER_MESH 10000
+
+triangle_t triangles_to_render[MAX_TRIANGLES_PER_MESH];
+
+int num_triangles_to_render = 0;
 
 
 vect3_t camera_position = { .x = 0, .y = 0,.z = 0 };
-
-
-
 
 enum Render_mode selected_render_mode = RENDER_FILLED_TRIANGLES_SOLID_COLOR;
 enum cull_mode selected_cull_mode = CULL_BACKFACE;
@@ -26,6 +27,8 @@ bool is_running = false;
 
 int previous_frame_time = 0;
 
+float delta_time = 0.0;
+
 
 mat4_t projection_matrix;
 
@@ -36,6 +39,7 @@ void setup(void)
 {
 	//allocate the required memory in bytes to hold the color buffer
 	color_buffer = (uint32_t*)malloc(sizeof(uint32_t) * window_width * window_height);
+	z_buffer = (float*)malloc(sizeof(float) * window_width * window_height);
 
 	//creating an SDL texture that is used to display the color buffer
 	color_buffer_texture = SDL_CreateTexture(
@@ -70,6 +74,7 @@ void setup(void)
 	//my_load_obj_file_data("./assets/appa_triangulated.obj");
 
 	//load_obj_file_data("./assets/appa_triangulated.obj");
+	
 	//load_obj_file_data("./assets/f22.obj");
 	//load_png_texture_data("./assets/f22.png");
 
@@ -219,14 +224,15 @@ void update(void)
 		SDL_Delay(time_to_wait);
 	}
 
+	delta_time = (SDL_GetTicks() - previous_frame_time) / 1000.0f;
+
+
 	previous_frame_time = SDL_GetTicks();
 
-
-	triangles_to_render = NULL;
-
+	num_triangles_to_render = 0;
 
 	//mesh.rotation.x += 0.01;
-	mesh.rotation.y += 0.01;
+	mesh.rotation.y += 0.3 * delta_time;
 	//mesh.rotation.z += 0.01;
 
 	//mesh.scale.x += 0.002;
@@ -234,6 +240,11 @@ void update(void)
 
 	//mesh.translation.x += 0.01;
 	mesh.translation.z = 5;
+
+
+
+
+
 
 	mat4_t scale_matrix = mat4_make_scale(mesh.scale.x, mesh.scale.y, mesh.scale.z);
 	mat4_t translation_matrix = mat4_make_translation(mesh.translation.x, mesh.translation.y, mesh.translation.z);
@@ -337,10 +348,6 @@ void update(void)
 			
 		}
 
-
-		float avg_depth = (transformed_vertices[0].z + transformed_vertices[1].z + transformed_vertices[2].z) / 3.0;
-
-
 		vect3_normalize(&light_source.direction);
 
 		float light_intensity_factor = -vect3_dot(light_source.direction, normal);
@@ -369,32 +376,22 @@ void update(void)
 				{mesh_face.c_uv.u, mesh_face.c_uv.v},
 			},
 			.color = triangle_color,
-			.avg_depth = avg_depth
 		};
 
 
 
-		array_push(triangles_to_render, projected_triangle);
+		if (num_triangles_to_render < MAX_TRIANGLES_PER_MESH)
+		{
+			triangles_to_render[num_triangles_to_render] = projected_triangle;
+			num_triangles_to_render++;
+		}
+
+		
 
 
 	}
 
 	int num_triangles_to_render = array_length(triangles_to_render);
-
-	//bubble sort the triangles based on depth
-	for (int i = 0; i < num_triangles_to_render; i++)
-	{
-		for (int j = i; j < num_triangles_to_render; j++)
-		{
-			if (triangles_to_render[i].avg_depth < triangles_to_render[j].avg_depth) {
-
-				triangle_t temp = triangles_to_render[i];
-				triangles_to_render[i] = triangles_to_render[j];
-				triangles_to_render[j] = temp;
-			}
-		}
-	}
-
 
 }
 
@@ -404,10 +401,7 @@ void render()
 	//draw_grid();
 
 
-
-	int num_triangles = array_length(triangles_to_render);
-
-	for (int i = 0; i < num_triangles; i++) {
+	for (int i = 0; i < num_triangles_to_render; i++) {
 		triangle_t triangle = triangles_to_render[i];
 
 		uint32_t wire_color = 0xff0000ff;
@@ -451,11 +445,11 @@ void render()
 	}
 
 
-	array_free(triangles_to_render);
 
 	render_color_buffer();
 
 	clear_color_buffer(0xFF000000);
+	clear_z_buffer();
 
 	SDL_RenderPresent(renderer);
 }
@@ -466,6 +460,7 @@ void free_resources(void)
 	array_free(mesh.faces);
 	array_free(mesh.vertices);
 	free(png_texture);
+	free(z_buffer);
 }
 
 int main(int argc, char* args[])
