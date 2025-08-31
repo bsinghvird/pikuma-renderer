@@ -7,6 +7,8 @@
 #include "light.h"
 #include "texture.h"
 #include "triangle.h"
+#include "camera.h"
+
 
 #define MAX_TRIANGLES_PER_MESH 10000
 
@@ -14,8 +16,6 @@ triangle_t triangles_to_render[MAX_TRIANGLES_PER_MESH];
 
 int num_triangles_to_render = 0;
 
-
-vect3_t camera_position = { .x = 0, .y = 0,.z = 0 };
 
 enum Render_mode selected_render_mode = RENDER_FILLED_TRIANGLES_SOLID_COLOR;
 enum cull_mode selected_cull_mode = CULL_BACKFACE;
@@ -31,7 +31,8 @@ float delta_time = 0.0;
 
 
 mat4_t projection_matrix;
-
+mat4_t view_matrix;
+mat4_t world_matrix;
 
 light_t light_source;
 
@@ -78,11 +79,11 @@ void setup(void)
 	//load_obj_file_data("./assets/f22.obj");
 	//load_png_texture_data("./assets/f22.png");
 
-	load_obj_file_data("./assets/drone.obj");
-	load_png_texture_data("./assets/drone.png");
+	//load_obj_file_data("./assets/drone.obj");
+	//load_png_texture_data("./assets/drone.png");
 
-	//load_obj_file_data("./assets/f117.obj");
-	//load_png_texture_data("./assets/f117.png");
+	load_obj_file_data("./assets/f117.obj");
+	load_png_texture_data("./assets/f117.png");
 
 	//load_obj_file_data("./assets/efa.obj");
 	//load_png_texture_data("./assets/efa.png");
@@ -107,7 +108,6 @@ void process_input(void)
 				is_running = false;
 			else if (event.key.keysym.sym == SDLK_1)
 				selected_render_mode = RENDER_WIREFRAME_AND_RED_DOT_VERTEX;
-
 			else if (event.key.keysym.sym == SDLK_2)
 				selected_render_mode = RENDER_WIREFRAME;
 			else if (event.key.keysym.sym == SDLK_3)
@@ -120,8 +120,50 @@ void process_input(void)
 				selected_render_mode = RENDER_TEXTURED_AND_WIREFRAME;
 			else if (event.key.keysym.sym == SDLK_c)
 				selected_cull_mode = CULL_BACKFACE;
-			else if (event.key.keysym.sym == SDLK_d)
+			else if (event.key.keysym.sym == SDLK_x)
 				selected_cull_mode = CULL_NONE;
+
+			if (event.key.keysym.sym == SDLK_SPACE)
+				camera.position.y += 3.0 * delta_time;
+			if (event.key.keysym.sym == SDLK_LCTRL)
+				camera.position.y -= 3.0 * delta_time;
+			
+			if (event.key.keysym.sym == SDLK_d)
+			{
+				vect3_t up_direction = { 0,1,0 };
+				vect3_t side = vect3_cross(camera.direction, up_direction);
+				camera.side_velocity = vect3_mul(side, 5.0 * delta_time);
+				camera.position = vect3_sub(camera.position, camera.side_velocity);
+			}
+			if (event.key.keysym.sym == SDLK_a)
+			{
+				vect3_t up_direction = { 0,1,0 };
+				vect3_t side = vect3_cross(camera.direction, up_direction);
+				camera.side_velocity = vect3_mul(side, 5.0 * delta_time);
+				camera.position = vect3_add(camera.position, camera.side_velocity);
+			}
+			if (event.key.keysym.sym == SDLK_LEFT)
+				camera.yaw -= 1.0 * delta_time;
+			if (event.key.keysym.sym == SDLK_RIGHT)
+				camera.yaw += 1.0 * delta_time;
+
+			if (event.key.keysym.sym == SDLK_UP)
+				camera.pitch -= 1.0 * delta_time;
+			if (event.key.keysym.sym == SDLK_DOWN)
+				camera.pitch += 1.0 * delta_time;
+
+			if (event.key.keysym.sym == SDLK_w)
+			{
+				camera.forward_velocity = vect3_mul(camera.direction, 5.0 * delta_time);
+				camera.position = vect3_add(camera.position, camera.forward_velocity);
+			}
+			if (event.key.keysym.sym == SDLK_s)
+			{
+				camera.forward_velocity = vect3_mul(camera.direction, 5.0 * delta_time);
+				camera.position = vect3_sub(camera.position, camera.forward_velocity);
+			}
+
+
 			break;
 			
 	}
@@ -165,7 +207,9 @@ bool my_cull_face(vect3_t a, vect3_t b, vect3_t c)
 
 
 	//I pretty much had it right, but I had these swapped around 
-	vect3_t camera_ray = vect3_sub(camera_position, a);
+	vect3_t origin = { 0,0,0 };
+	vect3_t camera_ray = vect3_sub(origin, a);
+
 
 	float dot = vect3_dot(camera_ray, normal);
 
@@ -232,17 +276,32 @@ void update(void)
 	num_triangles_to_render = 0;
 
 	//mesh.rotation.x += 0.01;
-	mesh.rotation.y += 0.3 * delta_time;
+	//mesh.rotation.y += 0.3 * delta_time;
 	//mesh.rotation.z += 0.01;
 
 	//mesh.scale.x += 0.002;
 	//mesh.scale.y += 0.001;
 
 	//mesh.translation.x += 0.01;
-	mesh.translation.z = 5;
+	mesh.translation.z = 5.0;
+
+	
+	vect3_t up_direction = { 0,1,0 };
+
+	//initialize the target looking at the positive z axis
+	vect3_t target = { 0,0,1 };
+
+	mat4_t camera_yaw_rotation = mat4_make_rotation_y(camera.yaw);
+	mat4_t camera_pitch_rotation = mat4_make_rotation_x(camera.pitch);
+	camera.direction = vec3_from_vec4(mat4_mul_vec4(camera_yaw_rotation, vec4_from_vec3 (target)));
+
+	camera.direction = vec3_from_vec4(mat4_mul_vec4(camera_pitch_rotation, vec4_from_vec3(camera.direction)));
+
+	//offset the camera position in the direction where the camera is pointing at
+	target = vect3_add(camera.position, camera.direction);
 
 
-
+	view_matrix = mat4_look_at(camera.position, target, up_direction);
 
 
 
@@ -274,7 +333,7 @@ void update(void)
 
 
 			//  [T] * [R] * [S] * v
-			mat4_t world_matrix = mat4_identity();
+			world_matrix = mat4_identity();
 			world_matrix = mat4_mul_mat4(scale_matrix, world_matrix);
 			world_matrix = mat4_mul_mat4(rotation_z, world_matrix);
 			world_matrix = mat4_mul_mat4(rotation_y, world_matrix);
@@ -284,6 +343,9 @@ void update(void)
 
 
 			transformed_vertex = mat4_mul_vec4(world_matrix, transformed_vertex);
+
+			transformed_vertex = mat4_mul_vec4(view_matrix, transformed_vertex);
+
 			
 			transformed_vertices[j] = transformed_vertex;
 
@@ -303,7 +365,9 @@ void update(void)
 		vect3_t normal = vect3_cross(vector_ab, vector_ac);
 		vect3_normalize(&normal);
 
-		vect3_t camera_ray = vect3_sub(camera_position, vector_a);
+		//because we will be performing view transforms, the camera is always going to be at the origin (or at least that's how I think it works)
+		vect3_t origin = { 0,0,0 };
+		vect3_t camera_ray = vect3_sub(origin, vector_a);
 
 		float dot_normal_camera = vect3_dot(normal, camera_ray);
 

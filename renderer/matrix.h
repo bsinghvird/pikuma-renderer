@@ -23,4 +23,6 @@ vect4_t mat4_mul_vec4(mat4_t m, vect4_t v);
 mat4_t mat4_mul_mat4(mat4_t a, mat4_t b);
 vect4_t mat4_mul_vec4_project(mat4_t mat_proj, vect4_t v);
 
+mat4_t mat4_look_at(vect3_t eye, vect3_t target, vect3_t up);
+
 #endif
