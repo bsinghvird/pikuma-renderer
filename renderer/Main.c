@@ -8,6 +8,7 @@
 #include "texture.h"
 #include "triangle.h"
 #include "camera.h"
+#include "clipping.h"
 
 
 #define MAX_TRIANGLES_PER_MESH 10000
@@ -17,7 +18,7 @@ triangle_t triangles_to_render[MAX_TRIANGLES_PER_MESH];
 int num_triangles_to_render = 0;
 
 
-enum Render_mode selected_render_mode = RENDER_FILLED_TRIANGLES_SOLID_COLOR;
+enum Render_mode selected_render_mode = RENDER_TEXTURED;
 enum cull_mode selected_cull_mode = CULL_BACKFACE;
 
 float fov_factor = 640;
@@ -55,10 +56,16 @@ void setup(void)
 
 	float fov = M_PI / 3.0; //radians wooo 60 degrees
 	float aspect_ratio = (float) window_height / (float) window_width;
-	float znear = 0.1;
-	float zfar = 100.0;
+	float z_near = 0.1;
+	float z_far = 100.0;
 
-	projection_matrix = mat4_make_perspective(fov, aspect_ratio, znear, zfar);
+	projection_matrix = mat4_make_perspective(fov, aspect_ratio, z_near, z_far);
+
+	//initialize FRUSTUMS
+	init_frustum_planes(fov, z_near, z_far);
+
+
+
 
 	light_source.direction.x = 0 ;
 	light_source.direction.y = 0;

@@ -1,6 +1,12 @@
 #include "vector.h"
 #include <math.h>
 
+vect2_t vect2_new(float x, float y)
+{
+	vect2_t result = { x, y };
+	return result;
+}
+
 float vect2_length(vect2_t v)
 {
 	//look it's the pythagorean theorem
@@ -159,6 +165,12 @@ void vect3_normalize(vect3_t *v)
 
 
 
+
+vect3_t vect3_new(float x, float y, float z)
+{
+	vect3_t result = { x, y, z };
+	return result;
+}
 
 float vect3_length(vect3_t v)
 {
