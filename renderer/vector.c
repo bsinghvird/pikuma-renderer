@@ -224,6 +224,12 @@ vect3_t vec3_from_vec4(vect4_t v)
 	return result;
 }
 
+vect3_t vec3_clone(vect3_t* v)
+{
+	vect3_t result = { v->x, v->y, v->z };
+	return result;
+}
+
 vect4_t vec4_from_vec3(vect3_t v)
 {
 	vect4_t result = { v.x, v.y, v.z, 1.0 };

@@ -47,7 +47,7 @@ vect3_t vec3_rotate_x(vect3_t v, float angle);
 vect3_t vec3_rotate_y(vect3_t v, float angle);
 vect3_t vec3_rotate_z(vect3_t v, float angle);
 vect3_t vec3_from_vec4(vect4_t v);
-
+vect3_t vec3_clone(vect3_t* v);
 
 vect4_t vec4_from_vec3(vect3_t v);
 

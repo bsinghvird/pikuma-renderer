@@ -53,9 +53,6 @@ void draw_triangle_pixel(
 	uint32_t color);
 
 
-
-
-
 void draw_textured_triangle(triangle_t* triangle, uint32_t* texture);
 
 void draw_textured_triangle_points(
