@@ -41,6 +41,7 @@ void setup(void)
 {
 	//allocate the required memory in bytes to hold the color buffer
 	color_buffer = (uint32_t*)malloc(sizeof(uint32_t) * window_width * window_height);
+	int z_buffer_size = sizeof(float) * window_width * window_height;
 	z_buffer = (float*)malloc(sizeof(float) * window_width * window_height);
 
 	//creating an SDL texture that is used to display the color buffer
@@ -54,20 +55,24 @@ void setup(void)
 
 
 
-	float fov = M_PI / 3.0; //radians wooo 60 degrees
-	float aspect_ratio = (float) window_height / (float) window_width;
+	float aspect_ratio_y = (float)window_height / (float)window_width;
+	float aspect_ratio_x = (float)window_width / (float)window_height;
+
+	float fov_y = M_PI / 3.0; //radians wooo 60 degrees
+	float fov_x = atan(tan(fov_y / 2) * aspect_ratio_x)*2;
+	
 	float z_near = 0.1;
 	float z_far = 100.0;
 
-	projection_matrix = mat4_make_perspective(fov, aspect_ratio, z_near, z_far);
+	projection_matrix = mat4_make_perspective(fov_y, aspect_ratio_y, z_near, z_far);
 
 	//initialize FRUSTUMS
-	init_frustum_planes(fov, z_near, z_far);
+	init_frustum_planes(fov_x, fov_y, z_near, z_far);
 
 
 
 
-	light_source.direction.x = 0 ;
+	light_source.direction.x = 0;
 	light_source.direction.y = 0;
 	light_source.direction.z = 1;
 
@@ -78,8 +83,8 @@ void setup(void)
 
 	//load_cube_mesh_data();
 	// 
-	//load_obj_file_data("./assets/cube.obj");
-	//load_png_texture_data("./assets/cube.png");
+	load_obj_file_data("./assets/cube.obj");
+	load_png_texture_data("./assets/cube.png");
 	// 
 	//my_load_obj_file_data("./assets/appa_triangulated.obj");
 
@@ -88,8 +93,8 @@ void setup(void)
 	//load_obj_file_data("./assets/f22.obj");
 	//load_png_texture_data("./assets/f22.png");
 
-	load_obj_file_data("./assets/drone.obj");
-	load_png_texture_data("./assets/drone.png");
+	//load_obj_file_data("./assets/drone.obj");
+	//load_png_texture_data("./assets/drone.png");
 
 	//load_obj_file_data("./assets/f117.obj");
 	//load_png_texture_data("./assets/f117.png");

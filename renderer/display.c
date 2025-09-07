@@ -11,6 +11,7 @@ SDL_Texture* color_buffer_texture = NULL;
 
 int window_width = 1920;
 int window_height = 1080;
+int total_num_pixels = 0;
 
 bool initialize_window(void)
 {
@@ -25,6 +26,9 @@ bool initialize_window(void)
 
 	//window_width = display_mode.w;
 	//window_height = display_mode.h;
+
+	total_num_pixels = window_width * window_height;
+
 
 	window = SDL_CreateWindow(
 		NULL,

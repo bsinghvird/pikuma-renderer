@@ -106,6 +106,15 @@ void draw_texel(
 	tex2_t a_uv, tex2_t b_uv, tex2_t c_uv)
 {
 
+
+	int buffer_index = (window_width * y) + x;
+
+	//the videos don't have to do this, but kept getting buffer indexes outside of the range of how many pixels there are on the screen. 
+	if (buffer_index >= total_num_pixels)
+	{
+		return;
+	}
+
 	vect2_t p = { x,y };
 	vect2_t a = vec2_from_vec4(point_a);
 	vect2_t b = vec2_from_vec4(point_b);
@@ -147,7 +156,6 @@ void draw_texel(
 
 	uint32_t color = texture[texture_index];
 
-	int buffer_index = (window_width * y) + x;
 
 	//adjust 1/w so the pixels that are closer to the camera have smaller values
 	interpolated_reciprocal_w = 1.0 - interpolated_reciprocal_w;
@@ -162,8 +170,6 @@ void draw_texel(
 	}
 
 
-	
-
 }
 
 void draw_triangle_pixel(
@@ -171,6 +177,17 @@ void draw_triangle_pixel(
 	vect4_t point_a, vect4_t point_b, vect4_t point_c,
 	uint32_t color)
 {
+
+
+	int buffer_index = (window_width * y) + x;
+
+	//the videos don't have to do this, but kept getting buffer indexes outside of the range of how many pixels there are on the screen. 
+	if (buffer_index >= total_num_pixels)
+	{
+		return;
+	}
+
+
 	vect2_t p = { x,y };
 	vect2_t a = vec2_from_vec4(point_a);
 	vect2_t b = vec2_from_vec4(point_b);
@@ -191,7 +208,6 @@ void draw_triangle_pixel(
 	//adjust 1/w so the pixels that are closer to the camera have smaller values
 	interpolated_reciprocal_w = 1.0 - interpolated_reciprocal_w;
 
-	int buffer_index = (window_width * y) + x;
 
 	//only draw pixel if depth value is less than the one previously stored in z buffer
 	if (interpolated_reciprocal_w < z_buffer[buffer_index])
@@ -202,7 +218,6 @@ void draw_triangle_pixel(
 	}
 
 }
-
 
 void draw_textured_triangle(triangle_t* triangle, uint32_t* texture)
 {
@@ -430,10 +445,10 @@ void draw_filled_triangle_points(
 	float inv_slope_1 = 0;
 	float inv_slope_2 = 0;
 
-	if (y1 != y0) inv_slope_1 = (float)(x1 - x0) / abs(y1 - y0);
-	if (y2 != y0) inv_slope_2 = (float)(x2 - x0) / abs(y2 - y0);
+	if (y1 - y0 != 0) inv_slope_1 = (float)(x1 - x0) / abs(y1 - y0);
+	if (y2 - y0 != 0) inv_slope_2 = (float)(x2 - x0) / abs(y2 - y0);
 
-	if (y1 != y0)
+	if (y1 - y0 != 0) 
 	{
 		for (int y = y0; y <= y1; y++)
 		{
@@ -446,7 +461,7 @@ void draw_filled_triangle_points(
 				int_swap(&x_end, &x_start);
 			}
 
-			for (int x = x_start; x <= x_end; x++)
+			for (int x = x_start; x < x_end; x++)
 			{
 				draw_triangle_pixel(x, y, point_a, point_b, point_c, color);
 			}
@@ -464,10 +479,10 @@ void draw_filled_triangle_points(
 	inv_slope_2 = 0;
 	//inv_slope2 is the same as above so it does not need to be calculated again but the video does so here we are
 
-	if (y2 != y1) inv_slope_1 = (float)(x2 - x1) / abs(y2 - y1);
-	if (y2 != y0) inv_slope_2 = (float)(x2 - x0) / abs(y2 - y0);
+	if (y2 - y1 != 0) inv_slope_1 = (float)(x2 - x1) / abs(y2 - y1);
+	if (y2 - y0 != 0) inv_slope_2 = (float)(x2 - x0) / abs(y2 - y0);
 
-	if (y2 != y1)
+	if (y2 - y1 != 0) 
 	{
 		for (int y = y1; y <= y2; y++)
 		{
@@ -480,7 +495,7 @@ void draw_filled_triangle_points(
 				int_swap(&x_end, &x_start);
 			}
 
-			for (int x = x_start; x <= x_end; x++)
+			for (int x = x_start; x < x_end; x++)
 			{
 				draw_triangle_pixel(x, y, point_a, point_b, point_c, color);
 			}
@@ -494,7 +509,3 @@ void draw_filled_triangle_points(
 
 
 }
-
-
-
-

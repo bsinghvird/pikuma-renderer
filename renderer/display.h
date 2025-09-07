@@ -36,6 +36,7 @@ extern SDL_Texture* color_buffer_texture;
 
 extern int window_width;
 extern int window_height;
+extern int total_num_pixels;
 
 bool initialize_window(void);
 
