@@ -83,15 +83,15 @@ void setup(void)
 
 	//load_cube_mesh_data();
 	// 
-	load_obj_file_data("./assets/cube.obj");
-	load_png_texture_data("./assets/cube.png");
+	//load_obj_file_data("./assets/cube.obj");
+	//load_png_texture_data("./assets/cube.png");
 	// 
 	//my_load_obj_file_data("./assets/appa_triangulated.obj");
 
 	//load_obj_file_data("./assets/appa_triangulated.obj");
 	
-	//load_obj_file_data("./assets/f22.obj");
-	//load_png_texture_data("./assets/f22.png");
+	load_obj_file_data("./assets/f22.obj");
+	load_png_texture_data("./assets/f22.png");
 
 	//load_obj_file_data("./assets/drone.obj");
 	//load_png_texture_data("./assets/drone.png");
@@ -99,8 +99,8 @@ void setup(void)
 	//load_obj_file_data("./assets/f117.obj");
 	//load_png_texture_data("./assets/f117.png");
 
-	//load_obj_file_data("./assets/efa.obj");
-	//load_png_texture_data("./assets/efa.png");
+	/*load_obj_file_data("./assets/efa.obj");
+	load_png_texture_data("./assets/efa.png");*/
 
 	//load_obj_file_data("./assets/crab.obj");
 	//load_png_texture_data("./assets/crab.png");
@@ -410,7 +410,10 @@ void update(void)
 		polygon_t polygon = create_polygon_from_triangle(
 			vec3_from_vec4(transformed_vertices[0]),
 			vec3_from_vec4(transformed_vertices[1]),
-			vec3_from_vec4(transformed_vertices[2]));
+			vec3_from_vec4(transformed_vertices[2]),
+			mesh_face.a_uv,
+			mesh_face.b_uv,
+			mesh_face.c_uv);
 
 		clip_polygon(&polygon);
 
@@ -473,14 +476,14 @@ void update(void)
 					{projected_points[2].x, projected_points[2].y, projected_points[2].z, projected_points[2].w}
 				},
 				.texcoords = {
-					{mesh_face.a_uv.u, mesh_face.a_uv.v},
-					{mesh_face.b_uv.u, mesh_face.b_uv.v},
-					{mesh_face.c_uv.u, mesh_face.c_uv.v},
+					{triangle_after_clipping.texcoords[0].u, triangle_after_clipping.texcoords[0].v},
+					{triangle_after_clipping.texcoords[1].u, triangle_after_clipping.texcoords[1].v},
+					{triangle_after_clipping.texcoords[2].u, triangle_after_clipping.texcoords[2].v},
 				},
 				.color = triangle_color,
 			};
 
-
+			
 
 			if (num_triangles_to_render < MAX_TRIANGLES_PER_MESH)
 			{

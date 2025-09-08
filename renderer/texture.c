@@ -83,3 +83,10 @@ void load_png_texture_data(char* filename)
         printf("error %u: %s\n", error, lodepng_error_text(error));
     mesh_texture = (uint32_t*)png_texture;
 }
+
+tex2_t tex2_clone(tex2_t* t)
+{
+    tex2_t result = { t->u, t->v };
+
+    return result;
+}

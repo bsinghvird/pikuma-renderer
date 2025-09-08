@@ -374,11 +374,6 @@ void draw_textured_triangle_points(
 }
 
 
-
-
-
-
-
 void draw_filled_triangle(triangle_t *triangle, uint32_t color)
 {
 
