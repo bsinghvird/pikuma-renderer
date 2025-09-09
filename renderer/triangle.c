@@ -107,13 +107,13 @@ void draw_texel(
 {
 
 
-	int buffer_index = (window_width * y) + x;
+	//int buffer_index = (get_window_width() * y) + x;
 
 	//the videos don't have to do this, but kept getting buffer indexes outside of the range of how many pixels there are on the screen. 
-	if (buffer_index >= total_num_pixels)
-	{
-		return;
-	}
+	//if (buffer_index >= get_total_num_pixels())
+	//{
+	//	return;
+	//}
 
 	vect2_t p = { x,y };
 	vect2_t a = vec2_from_vec4(point_a);
@@ -162,10 +162,11 @@ void draw_texel(
 
 
 	//only draw pixel if depth value is less than the one previously stored in z buffer
-	if (interpolated_reciprocal_w < z_buffer[buffer_index])
+	if (interpolated_reciprocal_w < get_z_buffer_at(x,y))
 	{
 		draw_pixel(x, y, color);
-		z_buffer[buffer_index] = interpolated_reciprocal_w;
+		
+		set_z_buffer_at(x, y, interpolated_reciprocal_w);
 
 	}
 
@@ -179,13 +180,13 @@ void draw_triangle_pixel(
 {
 
 
-	int buffer_index = (window_width * y) + x;
+	//int buffer_index = (get_window_width() * y) + x;
 
-	//the videos don't have to do this, but kept getting buffer indexes outside of the range of how many pixels there are on the screen. 
-	if (buffer_index >= total_num_pixels)
-	{
-		return;
-	}
+	////the videos don't have to do this, but kept getting buffer indexes outside of the range of how many pixels there are on the screen. 
+	//if (buffer_index >= get_total_num_pixels())
+	//{
+	//	return;
+	//}
 
 
 	vect2_t p = { x,y };
@@ -210,10 +211,11 @@ void draw_triangle_pixel(
 
 
 	//only draw pixel if depth value is less than the one previously stored in z buffer
-	if (interpolated_reciprocal_w < z_buffer[buffer_index])
+	if (interpolated_reciprocal_w < get_z_buffer_at(x, y))
 	{
 		draw_pixel(x, y, color);
-		z_buffer[buffer_index] = interpolated_reciprocal_w;
+
+		set_z_buffer_at(x, y, interpolated_reciprocal_w);
 
 	}
 

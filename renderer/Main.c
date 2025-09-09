@@ -17,10 +17,6 @@ triangle_t triangles_to_render[MAX_TRIANGLES_PER_MESH];
 
 int num_triangles_to_render = 0;
 
-
-enum Render_mode selected_render_mode = RENDER_TEXTURED;
-enum cull_mode selected_cull_mode = CULL_BACKFACE;
-
 float fov_factor = 640;
 
 bool is_running = false;
@@ -35,28 +31,18 @@ mat4_t projection_matrix;
 mat4_t view_matrix;
 mat4_t world_matrix;
 
-light_t light_source;
+//light_t light_source;
 
 void setup(void)
 {
-	//allocate the required memory in bytes to hold the color buffer
-	color_buffer = (uint32_t*)malloc(sizeof(uint32_t) * window_width * window_height);
-	int z_buffer_size = sizeof(float) * window_width * window_height;
-	z_buffer = (float*)malloc(sizeof(float) * window_width * window_height);
 
-	//creating an SDL texture that is used to display the color buffer
-	color_buffer_texture = SDL_CreateTexture(
-		renderer,
-		SDL_PIXELFORMAT_RGBA32,
-		SDL_TEXTUREACCESS_STREAMING,
-		window_width,
-		window_height
-		);
+	//setters for render method 
+	set_render_mode(RENDER_TEXTURED);
+	set_cull_mode(CULL_BACKFACE);
 
 
-
-	float aspect_ratio_y = (float)window_height / (float)window_width;
-	float aspect_ratio_x = (float)window_width / (float)window_height;
+	float aspect_ratio_y = (float)get_window_height() / (float)get_window_width();
+	float aspect_ratio_x = (float)get_window_width() / (float)get_window_height();
 
 	float fov_y = M_PI / 3.0; //radians wooo 60 degrees
 	float fov_x = atan(tan(fov_y / 2) * aspect_ratio_x)*2;
@@ -72,14 +58,17 @@ void setup(void)
 
 
 
-	light_source.direction.x = 0;
+	/*light_source.direction.x = 0;
 	light_source.direction.y = 0;
-	light_source.direction.z = 1;
+	light_source.direction.z = 1;*/
+
+
+	init_light(vect3_new(0, 0, 1));
+
 
 	/*mesh_texture = (uint32_t*) REDBRICK_TEXTURE;
 	texture_width = 64;
 	texture_height = 64;*/
-
 
 	//load_cube_mesh_data();
 	// 
@@ -111,9 +100,10 @@ void setup(void)
 void process_input(void)
 {
 	SDL_Event event;
-	SDL_PollEvent(&event);
-	switch (event.type)
+	while (SDL_PollEvent(&event))
 	{
+		switch (event.type)
+		{
 		case SDL_QUIT:
 			is_running = false;
 			break;
@@ -121,27 +111,27 @@ void process_input(void)
 			if (event.key.keysym.sym == SDLK_ESCAPE)
 				is_running = false;
 			else if (event.key.keysym.sym == SDLK_1)
-				selected_render_mode = RENDER_WIREFRAME_AND_RED_DOT_VERTEX;
+				set_render_mode(RENDER_WIREFRAME_AND_RED_DOT_VERTEX);
 			else if (event.key.keysym.sym == SDLK_2)
-				selected_render_mode = RENDER_WIREFRAME;
+				set_render_mode(RENDER_WIREFRAME);
 			else if (event.key.keysym.sym == SDLK_3)
-				selected_render_mode = RENDER_FILLED_TRIANGLES_SOLID_COLOR;
+				set_render_mode(RENDER_FILLED_TRIANGLES_SOLID_COLOR);
 			else if (event.key.keysym.sym == SDLK_4)
-				selected_render_mode = RENDER_FILLED_AND_WIREFRAME;
+				set_render_mode(RENDER_FILLED_AND_WIREFRAME);
 			else if (event.key.keysym.sym == SDLK_5)
-				selected_render_mode = RENDER_TEXTURED;
+				set_render_mode(RENDER_TEXTURED);
 			else if (event.key.keysym.sym == SDLK_6)
-				selected_render_mode = RENDER_TEXTURED_AND_WIREFRAME;
+				set_render_mode(RENDER_TEXTURED_AND_WIREFRAME);
 			else if (event.key.keysym.sym == SDLK_c)
-				selected_cull_mode = CULL_BACKFACE;
+				set_cull_mode(CULL_BACKFACE);
 			else if (event.key.keysym.sym == SDLK_x)
-				selected_cull_mode = CULL_NONE;
+				set_cull_mode(CULL_NONE);
 
 			if (event.key.keysym.sym == SDLK_SPACE)
 				camera.position.y += 3.0 * delta_time;
 			if (event.key.keysym.sym == SDLK_LCTRL)
 				camera.position.y -= 3.0 * delta_time;
-			
+
 			if (event.key.keysym.sym == SDLK_d)
 			{
 				vect3_t up_direction = { 0,1,0 };
@@ -179,9 +169,9 @@ void process_input(void)
 
 
 			break;
-			
-	}
 
+		}
+	}
 }
 
 
@@ -253,9 +243,9 @@ float calculate_light_intesnity(vect4_t *transformed_vertices)
 	vect3_t normal = vect3_cross(vector_ab, vector_ac);
 	vect3_normalize(&normal);
 
-	vect3_normalize(&light_source.direction);
+	//vect3_normalize(&get_light_direction());
 
-	float dot = -vect3_dot(light_source.direction, normal);
+	float dot = -vect3_dot(get_light_direction(), normal);
 
 	intensity = dot;
 
@@ -302,16 +292,39 @@ void update(void)
 	
 	vect3_t up_direction = { 0,1,0 };
 
-	//initialize the target looking at the positive z axis
+/*
+	this was my implenetation. The thing I was doing wrong was mulitplying the matrixes in the wrong order
+	 I was doing rotation yaw x target = result, then rotation pitch x result
+	 Instead I need to create a matrix of just the rotations. So start with identity matrix (rotation matrix)
+	 then camera pitch x camera rotation, save result in camera rotation, camera yaw x camera rotation, save result in camera rotation
+	 THEN camera direction = camera rotation x target
+	
+	initialize the target looking at the positive z axis
 	vect3_t target = { 0,0,1 };
-
 	mat4_t camera_yaw_rotation = mat4_make_rotation_y(camera.yaw);
 	mat4_t camera_pitch_rotation = mat4_make_rotation_x(camera.pitch);
+	
 	camera.direction = vec3_from_vec4(mat4_mul_vec4(camera_yaw_rotation, vec4_from_vec3 (target)));
 
 	camera.direction = vec3_from_vec4(mat4_mul_vec4(camera_pitch_rotation, vec4_from_vec3(camera.direction)));
 
 	//offset the camera position in the direction where the camera is pointing at
+	target = vect3_add(camera.position, camera.direction);
+*/
+	//initialize the target looking at the positive z axis
+	vect3_t target = { 0,0,1 };
+
+	mat4_t camera_yaw_rotation = mat4_make_rotation_y(camera.yaw);
+	mat4_t camera_pitch_rotation = mat4_make_rotation_x(camera.pitch);
+
+
+	mat4_t camera_rotation = mat4_identity();
+	camera_rotation = mat4_mul_mat4(camera_pitch_rotation, camera_rotation);
+	camera_rotation = mat4_mul_mat4(camera_yaw_rotation, camera_rotation);
+
+	vect4_t camera_direction = mat4_mul_vec4(camera_rotation, vec4_from_vec3(target));
+	camera.direction = vec3_from_vec4(camera_direction);
+
 	target = vect3_add(camera.position, camera.direction);
 
 
@@ -392,7 +405,7 @@ void update(void)
 		float dot_normal_camera = vect3_dot(normal, camera_ray);
 
 
-		if (selected_cull_mode == CULL_BACKFACE)
+		if (get_cull_mode() == CULL_BACKFACE)
 		{
 
 			if (dot_normal_camera < 0)
@@ -440,22 +453,22 @@ void update(void)
 				projected_points[j] = mat4_mul_vec4_project(projection_matrix, triangle_after_clipping.points[j]);
 
 				//scale into view
-				projected_points[j].x *= (window_width / 2.0);
-				projected_points[j].y *= (window_height / 2.0);
+				projected_points[j].x *= (get_window_width() / 2.0);
+				projected_points[j].y *= (get_window_height() / 2.0);
 
 				//projected_points[j].x *= -1;
 				projected_points[j].y *= -1;
 
 
 				//translate into view
-				projected_points[j].x += (window_width / 2.0);
-				projected_points[j].y += (window_height / 2.0);
+				projected_points[j].x += (get_window_width() / 2.0);
+				projected_points[j].y += (get_window_height() / 2.0);
 
 			}
 
-			vect3_normalize(&light_source.direction);
+			//vect3_normalize(&light_source.direction);
 
-			float light_intensity_factor = -vect3_dot(light_source.direction, normal);
+			float light_intensity_factor = -vect3_dot(get_light_direction(), normal);
 
 
 			if (light_intensity_factor < 0.0)
@@ -505,6 +518,9 @@ void render()
 {
 	//draw_grid();
 
+	clear_color_buffer(0xFF000000);
+	clear_z_buffer();
+
 
 	for (int i = 0; i < num_triangles_to_render; i++) {
 		triangle_t triangle = triangles_to_render[i];
@@ -512,7 +528,7 @@ void render()
 		uint32_t wire_color = 0xff0000ff;
 		uint32_t fill_color = 0xFFF78228;
 
-		if (selected_render_mode == RENDER_WIREFRAME_AND_RED_DOT_VERTEX)
+		if (get_render_mode() == RENDER_WIREFRAME_AND_RED_DOT_VERTEX)
 		{
 			draw_triangle(&triangle, wire_color);
 			draw_rect(triangle.points[0].x-3, triangle.points[0].y-3, 6, 6, 0xffff0000);
@@ -520,28 +536,28 @@ void render()
 			draw_rect(triangle.points[2].x-3, triangle.points[2].y, 6, 6, 0xffff0000);
 	
 		}
-		else if (selected_render_mode == RENDER_WIREFRAME)
+		else if (get_render_mode() == RENDER_WIREFRAME)
 		{
 			draw_triangle(&triangle, wire_color);
 		}
-		else if (selected_render_mode == RENDER_FILLED_TRIANGLES_SOLID_COLOR)
+		else if (get_render_mode() == RENDER_FILLED_TRIANGLES_SOLID_COLOR)
 		{
 			draw_filled_triangle(&triangle, triangle.color);
 		}
-		else if (selected_render_mode == RENDER_FILLED_AND_WIREFRAME)
+		else if (get_render_mode() == RENDER_FILLED_AND_WIREFRAME)
 		{
 			draw_filled_triangle(&triangle, triangle.color);
 
 			draw_triangle(&triangle, wire_color);
 		}
-		else if (selected_render_mode == RENDER_TEXTURED)
+		else if (get_render_mode() == RENDER_TEXTURED)
 		{
 
 			draw_textured_triangle(&triangle, mesh_texture);
 
 			
 		}
-		else if (selected_render_mode == RENDER_TEXTURED_AND_WIREFRAME)
+		else if (get_render_mode() == RENDER_TEXTURED_AND_WIREFRAME)
 		{
 			draw_textured_triangle(&triangle, mesh_texture);
 			draw_triangle(&triangle, wire_color);
@@ -549,23 +565,16 @@ void render()
 
 	}
 
-
-
 	render_color_buffer();
 
-	clear_color_buffer(0xFF000000);
-	clear_z_buffer();
-
-	SDL_RenderPresent(renderer);
+	
 }
 
 void free_resources(void)
 {
-	free(color_buffer);
 	array_free(mesh.faces);
 	array_free(mesh.vertices);
 	free(png_texture);
-	free(z_buffer);
 }
 
 int main(int argc, char* args[])
