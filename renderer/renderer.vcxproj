@@ -141,6 +141,7 @@
     <ClCompile Include="Main.c" />
     <ClCompile Include="matrix.c" />
     <ClCompile Include="mesh.c" />
+    <ClCompile Include="png_info.c" />
     <ClCompile Include="swap.c" />
     <ClCompile Include="texture.c" />
     <ClCompile Include="triangle.c" />
@@ -155,6 +156,7 @@
     <ClInclude Include="lodepng.h" />
     <ClInclude Include="matrix.h" />
     <ClInclude Include="mesh.h" />
+    <ClInclude Include="png_info.h" />
     <ClInclude Include="swap.h" />
     <ClInclude Include="texture.h" />
     <ClInclude Include="triangle.h" />

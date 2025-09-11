@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include "vector.h"
 #include "texture.h"
+#include "png_info.h"
 
 typedef struct
 {
@@ -21,6 +22,7 @@ typedef struct
 	vect4_t points[3];
 	tex2_t texcoords[3];//where each point is on the 0-1 UV map
 	uint32_t color;
+	png_info_t* texture;
 } triangle_t;
 
 
@@ -43,7 +45,7 @@ void fill_flat_top_triangle(int x1, int y1, int Mx, int My, int x2, int y2, uint
 
 
 void draw_texel(
-	int x, int y, uint32_t* texture,
+	int x, int y, png_info_t* texture,
 	vect4_t point_a, vect4_t point_b, vect4_t point_c,
 	tex2_t a_uv, tex2_t b_uv, tex2_t c_uv);
 
@@ -53,13 +55,13 @@ void draw_triangle_pixel(
 	uint32_t color);
 
 
-void draw_textured_triangle(triangle_t* triangle, uint32_t* texture);
+void draw_textured_triangle(triangle_t* triangle);
 
 void draw_textured_triangle_points(
 	int x0, int y0, float z0, float w0, float u0, float v0,
 	int x1, int y1, float z1, float w1, float u1, float v1,
 	int x2, int y2, float z2, float w2, float u2, float v2,
-	uint32_t* texture);
+	png_info_t* texture);
 
 
 

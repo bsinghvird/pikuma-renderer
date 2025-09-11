@@ -79,8 +79,8 @@ void setup(void)
 
 	//load_obj_file_data("./assets/appa_triangulated.obj");
 	
-	load_obj_file_data("./assets/f22.obj");
-	load_png_texture_data("./assets/f22.png");
+	//load_obj_file_data("./assets/f22.obj");
+	//load_png_texture_data("./assets/f22.png");
 
 	//load_obj_file_data("./assets/drone.obj");
 	//load_png_texture_data("./assets/drone.png");
@@ -94,6 +94,9 @@ void setup(void)
 	//load_obj_file_data("./assets/crab.obj");
 	//load_png_texture_data("./assets/crab.png");
 
+
+	load_mesh("./assets/f22.obj", "./assets/f22.png", vect3_new(1, 1, 1), vect3_new(-3, 0, 8), vect3_new(0, 0, 0));
+	load_mesh("./assets/efa.obj", "./assets/efa.png", vect3_new(1, 1, 1), vect3_new(3, 0, 8), vect3_new(0, 0, 0));
 
 }
 
@@ -287,7 +290,7 @@ void update(void)
 	//mesh.scale.y += 0.001;
 
 	//mesh.translation.x += 0.01;
-	mesh.translation.z = 5.0;
+	//mesh.translation.z = 5.0;
 
 	
 	vect3_t up_direction = { 0,1,0 };
@@ -331,185 +334,191 @@ void update(void)
 	view_matrix = mat4_look_at(camera.position, target, up_direction);
 
 
-
-	mat4_t scale_matrix = mat4_make_scale(mesh.scale.x, mesh.scale.y, mesh.scale.z);
-	mat4_t translation_matrix = mat4_make_translation(mesh.translation.x, mesh.translation.y, mesh.translation.z);
-	mat4_t rotation_x = mat4_make_rotation_x(mesh.rotation.x);
-	mat4_t rotation_y = mat4_make_rotation_y(mesh.rotation.y);
-	mat4_t rotation_z = mat4_make_rotation_z(mesh.rotation.z);
-
-	int num_faces = array_length(mesh.faces);
-
-	for (int i = 0; i < num_faces; i++)
+	for (int mesh_index = 0; mesh_index < get_num_meshes(); mesh_index++)
 	{
 
-		if (i != 4)
-		{
-			//continue;
-		}
-
-		face_t mesh_face = mesh.faces[i];
-
-		vect3_t face_vertices[3];
-		face_vertices[0] = mesh.vertices[mesh_face.a];
-		face_vertices[1] = mesh.vertices[mesh_face.b];
-		face_vertices[2] = mesh.vertices[mesh_face.c];
-
-		
-
-		vect4_t transformed_vertices[3];
+		mesh_t* current_mesh = get_mesh(mesh_index);
 
 
-		for (int j = 0; j < 3; j++)
-		{
-			vect4_t transformed_vertex = vec4_from_vec3(face_vertices[j]);
+		mat4_t scale_matrix = mat4_make_scale(current_mesh->scale.x, current_mesh->scale.y, current_mesh->scale.z);
+		mat4_t translation_matrix = mat4_make_translation(current_mesh->translation.x, current_mesh->translation.y, current_mesh->translation.z);
+		mat4_t rotation_x = mat4_make_rotation_x(current_mesh->rotation.x);
+		mat4_t rotation_y = mat4_make_rotation_y(current_mesh->rotation.y);
+		mat4_t rotation_z = mat4_make_rotation_z(current_mesh->rotation.z);
 
+		int num_faces = array_length(current_mesh->faces);
 
-			//  [T] * [R] * [S] * v
-			world_matrix = mat4_identity();
-			world_matrix = mat4_mul_mat4(scale_matrix, world_matrix);
-			world_matrix = mat4_mul_mat4(rotation_z, world_matrix);
-			world_matrix = mat4_mul_mat4(rotation_y, world_matrix);
-			world_matrix = mat4_mul_mat4(rotation_x, world_matrix);
-
-			world_matrix = mat4_mul_mat4(translation_matrix, world_matrix);
-
-
-			transformed_vertex = mat4_mul_vec4(world_matrix, transformed_vertex);
-
-			transformed_vertex = mat4_mul_vec4(view_matrix, transformed_vertex);
-
-			
-			transformed_vertices[j] = transformed_vertex;
-
-		}
-
-
-		vect3_t vector_a = vec3_from_vec4(transformed_vertices[0]);
-		vect3_t vector_b = vec3_from_vec4(transformed_vertices[1]);
-		vect3_t vector_c = vec3_from_vec4(transformed_vertices[2]);
-
-
-		vect3_t vector_ab = vect3_sub(vector_b, vector_a);
-		vect3_t vector_ac = vect3_sub(vector_c, vector_a);
-		vect3_normalize(&vector_ab);
-		vect3_normalize(&vector_ac);
-
-		vect3_t normal = vect3_cross(vector_ab, vector_ac);
-		vect3_normalize(&normal);
-
-		//because we will be performing view transforms, the camera is always going to be at the origin (or at least that's how I think it works)
-		vect3_t origin = { 0,0,0 };
-		vect3_t camera_ray = vect3_sub(origin, vector_a);
-
-		float dot_normal_camera = vect3_dot(normal, camera_ray);
-
-
-		if (get_cull_mode() == CULL_BACKFACE)
+		for (int i = 0; i < num_faces; i++)
 		{
 
-			if (dot_normal_camera < 0)
+			if (i != 4)
 			{
-				continue;
+				//continue;
 			}
-		}
+
+			face_t mesh_face = current_mesh->faces[i];
+
+			vect3_t face_vertices[3];
+			face_vertices[0] = current_mesh->vertices[mesh_face.a];
+			face_vertices[1] = current_mesh->vertices[mesh_face.b];
+			face_vertices[2] = current_mesh->vertices[mesh_face.c];
 
 
-		//if (my_cull_face(vector_a, vector_b, vector_c))
-		//{
-		//	continue;
-		//}
-		
-		polygon_t polygon = create_polygon_from_triangle(
-			vec3_from_vec4(transformed_vertices[0]),
-			vec3_from_vec4(transformed_vertices[1]),
-			vec3_from_vec4(transformed_vertices[2]),
-			mesh_face.a_uv,
-			mesh_face.b_uv,
-			mesh_face.c_uv);
 
-		clip_polygon(&polygon);
+			vect4_t transformed_vertices[3];
 
-
-		//triangularize the n-gon we got from clipping the polygon
-
-		triangle_t triangles_after_clipping[MAX_NUM_POLY_TRIANGLES];
-		int num_triangles_after_clipping = 0;
-
-		triangles_from_polygon(&polygon, triangles_after_clipping, &num_triangles_after_clipping);
-
-
-		//for loop and do all the below for each triangle?
-
-		for (int triangle_count = 0; triangle_count < num_triangles_after_clipping; triangle_count++)
-		{
-			triangle_t triangle_after_clipping = triangles_after_clipping[triangle_count];
-
-			vect4_t projected_points[3];
 
 			for (int j = 0; j < 3; j++)
 			{
-
-				projected_points[j] = mat4_mul_vec4_project(projection_matrix, triangle_after_clipping.points[j]);
-
-				//scale into view
-				projected_points[j].x *= (get_window_width() / 2.0);
-				projected_points[j].y *= (get_window_height() / 2.0);
-
-				//projected_points[j].x *= -1;
-				projected_points[j].y *= -1;
+				vect4_t transformed_vertex = vec4_from_vec3(face_vertices[j]);
 
 
-				//translate into view
-				projected_points[j].x += (get_window_width() / 2.0);
-				projected_points[j].y += (get_window_height() / 2.0);
+				//  [T] * [R] * [S] * v
+				world_matrix = mat4_identity();
+				world_matrix = mat4_mul_mat4(scale_matrix, world_matrix);
+				world_matrix = mat4_mul_mat4(rotation_z, world_matrix);
+				world_matrix = mat4_mul_mat4(rotation_y, world_matrix);
+				world_matrix = mat4_mul_mat4(rotation_x, world_matrix);
 
-			}
-
-			//vect3_normalize(&light_source.direction);
-
-			float light_intensity_factor = -vect3_dot(get_light_direction(), normal);
+				world_matrix = mat4_mul_mat4(translation_matrix, world_matrix);
 
 
-			if (light_intensity_factor < 0.0)
-			{
-				light_intensity_factor = 0.0;
+				transformed_vertex = mat4_mul_vec4(world_matrix, transformed_vertex);
+
+				transformed_vertex = mat4_mul_vec4(view_matrix, transformed_vertex);
+
+
+				transformed_vertices[j] = transformed_vertex;
 
 			}
 
-			//float light_intensity_factor = calculate_light_intesnity(transformed_vertices);
 
-			uint32_t triangle_color = light_apply_intensity(mesh_face.color, light_intensity_factor);
+			vect3_t vector_a = vec3_from_vec4(transformed_vertices[0]);
+			vect3_t vector_b = vec3_from_vec4(transformed_vertices[1]);
+			vect3_t vector_c = vec3_from_vec4(transformed_vertices[2]);
 
-			triangle_t triangle_to_render =
+
+			vect3_t vector_ab = vect3_sub(vector_b, vector_a);
+			vect3_t vector_ac = vect3_sub(vector_c, vector_a);
+			vect3_normalize(&vector_ab);
+			vect3_normalize(&vector_ac);
+
+			vect3_t normal = vect3_cross(vector_ab, vector_ac);
+			vect3_normalize(&normal);
+
+			//because we will be performing view transforms, the camera is always going to be at the origin (or at least that's how I think it works)
+			vect3_t origin = { 0,0,0 };
+			vect3_t camera_ray = vect3_sub(origin, vector_a);
+
+			float dot_normal_camera = vect3_dot(normal, camera_ray);
+
+
+			if (get_cull_mode() == CULL_BACKFACE)
 			{
-				.points = {
-					{projected_points[0].x, projected_points[0].y, projected_points[0].z, projected_points[0].w},
-					{projected_points[1].x, projected_points[1].y, projected_points[1].z, projected_points[1].w},
-					{projected_points[2].x, projected_points[2].y, projected_points[2].z, projected_points[2].w}
-				},
-				.texcoords = {
-					{triangle_after_clipping.texcoords[0].u, triangle_after_clipping.texcoords[0].v},
-					{triangle_after_clipping.texcoords[1].u, triangle_after_clipping.texcoords[1].v},
-					{triangle_after_clipping.texcoords[2].u, triangle_after_clipping.texcoords[2].v},
-				},
-				.color = triangle_color,
-			};
 
-			
-
-			if (num_triangles_to_render < MAX_TRIANGLES_PER_MESH)
-			{
-				triangles_to_render[num_triangles_to_render] = triangle_to_render;
-				num_triangles_to_render++;
+				if (dot_normal_camera < 0)
+				{
+					continue;
+				}
 			}
+
+
+			//if (my_cull_face(vector_a, vector_b, vector_c))
+			//{
+			//	continue;
+			//}
+
+			polygon_t polygon = create_polygon_from_triangle(
+				vec3_from_vec4(transformed_vertices[0]),
+				vec3_from_vec4(transformed_vertices[1]),
+				vec3_from_vec4(transformed_vertices[2]),
+				mesh_face.a_uv,
+				mesh_face.b_uv,
+				mesh_face.c_uv);
+
+			clip_polygon(&polygon);
+
+
+			//triangularize the n-gon we got from clipping the polygon
+
+			triangle_t triangles_after_clipping[MAX_NUM_POLY_TRIANGLES];
+			int num_triangles_after_clipping = 0;
+
+			triangles_from_polygon(&polygon, triangles_after_clipping, &num_triangles_after_clipping);
+
+
+			//for loop and do all the below for each triangle?
+
+			for (int triangle_count = 0; triangle_count < num_triangles_after_clipping; triangle_count++)
+			{
+				triangle_t triangle_after_clipping = triangles_after_clipping[triangle_count];
+
+				vect4_t projected_points[3];
+
+				for (int j = 0; j < 3; j++)
+				{
+
+					projected_points[j] = mat4_mul_vec4_project(projection_matrix, triangle_after_clipping.points[j]);
+
+					//scale into view
+					projected_points[j].x *= (get_window_width() / 2.0);
+					projected_points[j].y *= (get_window_height() / 2.0);
+
+					//projected_points[j].x *= -1;
+					projected_points[j].y *= -1;
+
+
+					//translate into view
+					projected_points[j].x += (get_window_width() / 2.0);
+					projected_points[j].y += (get_window_height() / 2.0);
+
+				}
+
+				//vect3_normalize(&light_source.direction);
+
+				float light_intensity_factor = -vect3_dot(get_light_direction(), normal);
+
+
+				if (light_intensity_factor < 0.0)
+				{
+					light_intensity_factor = 0.0;
+
+				}
+
+				//float light_intensity_factor = calculate_light_intesnity(transformed_vertices);
+
+				uint32_t triangle_color = light_apply_intensity(mesh_face.color, light_intensity_factor);
+
+				triangle_t triangle_to_render =
+				{
+					.points = {
+						{projected_points[0].x, projected_points[0].y, projected_points[0].z, projected_points[0].w},
+						{projected_points[1].x, projected_points[1].y, projected_points[1].z, projected_points[1].w},
+						{projected_points[2].x, projected_points[2].y, projected_points[2].z, projected_points[2].w}
+					},
+					.texcoords = {
+						{triangle_after_clipping.texcoords[0].u, triangle_after_clipping.texcoords[0].v},
+						{triangle_after_clipping.texcoords[1].u, triangle_after_clipping.texcoords[1].v},
+						{triangle_after_clipping.texcoords[2].u, triangle_after_clipping.texcoords[2].v},
+					},
+					.color = triangle_color,
+					.texture = &current_mesh->texture
+				};
+
+
+
+				if (num_triangles_to_render < MAX_TRIANGLES_PER_MESH)
+				{
+					triangles_to_render[num_triangles_to_render] = triangle_to_render;
+					num_triangles_to_render++;
+				}
+
+			}
+
 
 		}
 
-
 	}
-
-	
 
 }
 
@@ -553,13 +562,13 @@ void render()
 		else if (get_render_mode() == RENDER_TEXTURED)
 		{
 
-			draw_textured_triangle(&triangle, mesh_texture);
+			draw_textured_triangle(&triangle);
 
 			
 		}
 		else if (get_render_mode() == RENDER_TEXTURED_AND_WIREFRAME)
 		{
-			draw_textured_triangle(&triangle, mesh_texture);
+			draw_textured_triangle(&triangle);
 			draw_triangle(&triangle, wire_color);
 		}
 
@@ -569,12 +578,10 @@ void render()
 
 	
 }
-
 void free_resources(void)
 {
-	array_free(mesh.faces);
-	array_free(mesh.vertices);
-	free(png_texture);
+	free_meshes();
+	destroy_window();
 }
 
 int main(int argc, char* args[])
@@ -594,7 +601,6 @@ int main(int argc, char* args[])
 		render();
 	}
 
-	destroy_window();
 	free_resources();
 
 	return 0;

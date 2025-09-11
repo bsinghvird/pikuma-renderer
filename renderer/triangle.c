@@ -101,7 +101,7 @@ vect3_t barycentric_weights(vect2_t a, vect2_t b, vect2_t c, vect2_t p)
 
 
 void draw_texel(
-	int x, int y, uint32_t* texture,
+	int x, int y, png_info_t* texture,
 	vect4_t point_a, vect4_t point_b, vect4_t point_c,
 	tex2_t a_uv, tex2_t b_uv, tex2_t c_uv)
 {
@@ -141,6 +141,10 @@ void draw_texel(
 	interpolated_u /= interpolated_reciprocal_w;
 	interpolated_v /= interpolated_reciprocal_w;
 
+
+	int texture_width = texture->texture_width;
+	int texture_height = texture->texture_height;
+
 	//uvs are float values between 0 and 1, so we need to scale by the texture width to get a number within the texture arraay
 	int tex_x = abs((int)(interpolated_u * texture_width)) % texture_width;
 	int tex_y = abs((int)(interpolated_v * texture_height)) % texture_height;
@@ -154,7 +158,10 @@ void draw_texel(
 	}*/
 
 
-	uint32_t color = texture[texture_index];
+
+	uint32_t* texture_buffer = (uint32_t*)texture->png_image;
+
+	uint32_t color = texture_buffer[texture_index];
 
 
 	//adjust 1/w so the pixels that are closer to the camera have smaller values
@@ -221,7 +228,7 @@ void draw_triangle_pixel(
 
 }
 
-void draw_textured_triangle(triangle_t* triangle, uint32_t* texture)
+void draw_textured_triangle(triangle_t* triangle)
 {
 
 	draw_textured_triangle_points(
@@ -243,7 +250,7 @@ void draw_textured_triangle(triangle_t* triangle, uint32_t* texture)
 		triangle->points[2].w,
 		triangle->texcoords[2].u,
 		triangle->texcoords[2].v,
-		texture
+		triangle->texture
 		);
 
 }
@@ -252,7 +259,7 @@ void draw_textured_triangle_points(
 	int x0, int y0, float z0, float w0, float u0, float v0,
 	int x1, int y1, float z1, float w1, float u1, float v1,
 	int x2, int y2, float z2, float w2, float u2, float v2,
-	uint32_t *texture)
+	png_info_t* texture)
 {
 
 	if (y0 > y1)
