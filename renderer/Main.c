@@ -502,7 +502,7 @@ void update(void)
 						{triangle_after_clipping.texcoords[2].u, triangle_after_clipping.texcoords[2].v},
 					},
 					.color = triangle_color,
-					.texture = &current_mesh->texture
+					.texture = current_mesh->texture
 				};
 
 

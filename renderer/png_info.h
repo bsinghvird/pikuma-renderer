@@ -7,15 +7,13 @@ typedef struct {
 	unsigned texture_width;
 	unsigned texture_height;
 
-	unsigned long	size;
-	unsigned error;
 	unsigned char* png_image;
 
 
 } png_info_t;
 
 
-void free_png_resources(png_info_t png_info);
+void free_png_resources(png_info_t* png_info);
 
 
 

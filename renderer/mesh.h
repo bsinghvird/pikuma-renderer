@@ -9,7 +9,7 @@ typedef struct {
 	vect3_t* vertices; //dynamic array of vertices
 	face_t* faces;// dyanmic array of faces (the magic of pointers)
 	
-	png_info_t texture;
+	png_info_t* texture;
 	
 	vect3_t rotation;
 	vect3_t scale;

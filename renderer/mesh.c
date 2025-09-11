@@ -107,9 +107,15 @@ void load_mesh_obj_file_data(mesh_t* mesh, char* obj_file_name)
 
 void load_mesh_png_data(mesh_t* mesh, char* png_file_name)
 {
-	png_info_t png_info;
-	
-	int error = lodepng_decode32_file(&png_info.png_image, &png_info.texture_width, &png_info.texture_height, png_file_name);
+	png_info_t* png_info = malloc(sizeof(png_info_t));
+
+	if (png_info == NULL)
+	{
+		free(png_info);
+		return;
+	}
+
+	int error = lodepng_decode32_file(&png_info->png_image, &png_info->texture_width, &png_info->texture_height, png_file_name);
 	if (error)
 	{
 		printf("error %u: %s\n", error, lodepng_error_text(error));
