@@ -382,6 +382,24 @@ void draw_textured_triangle_points(
 
 }
 
+vect3_t get_triangle_normal(vect4_t vertices[3])
+{
+	vect3_t vector_a = vec3_from_vec4(vertices[0]);
+	vect3_t vector_b = vec3_from_vec4(vertices[1]);
+	vect3_t vector_c = vec3_from_vec4(vertices[2]);
+
+
+	vect3_t vector_ab = vect3_sub(vector_b, vector_a);
+	vect3_t vector_ac = vect3_sub(vector_c, vector_a);
+	vect3_normalize(&vector_ab);
+	vect3_normalize(&vector_ac);
+
+	vect3_t normal = vect3_cross(vector_ab, vector_ac);
+	vect3_normalize(&normal);
+
+	return normal;
+}
+
 
 void draw_filled_triangle(triangle_t *triangle, uint32_t color)
 {

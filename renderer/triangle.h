@@ -63,6 +63,6 @@ void draw_textured_triangle_points(
 	int x2, int y2, float z2, float w2, float u2, float v2,
 	png_info_t* texture);
 
-
+vect3_t get_triangle_normal(vect4_t vertices[3]);
 
 #endif // !TRIANGLE_H
