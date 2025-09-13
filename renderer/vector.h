@@ -51,7 +51,7 @@ vect3_t vec3_clone(vect3_t* v);
 
 vect4_t vec4_from_vec3(vect3_t v);
 
-
+int edge_cross(vect4_t* a, vect4_t* b, vect4_t* p);
 
 #endif // !VECTOR_H
 

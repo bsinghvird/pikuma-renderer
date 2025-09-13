@@ -237,5 +237,12 @@ vect4_t vec4_from_vec3(vect3_t v)
 	return result;
 }
 
+int edge_cross(vect4_t* a, vect4_t* b, vect4_t* p)
+{
+	vect2_t ab = { b->x - a->x, b->y - a->y };
+	vect2_t ap = { p->x - a->x, p->y - a->y };
+	return ab.x * ap.y - ab.y * ap.x;
+}
+
 
 

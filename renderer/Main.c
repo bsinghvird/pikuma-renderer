@@ -125,6 +125,8 @@ void process_input(void)
 				set_render_mode(RENDER_TEXTURED);
 			else if (event.key.keysym.sym == SDLK_6)
 				set_render_mode(RENDER_TEXTURED_AND_WIREFRAME);
+			else if (event.key.keysym.sym == SDLK_7)
+				set_render_mode(RENDER_FILLED_PARALLEL);
 			else if (event.key.keysym.sym == SDLK_c)
 				set_cull_mode(CULL_BACKFACE);
 			else if (event.key.keysym.sym == SDLK_x)
@@ -538,39 +540,46 @@ void render()
 		uint32_t wire_color = 0xff0000ff;
 		uint32_t fill_color = 0xFFF78228;
 
-		if (get_render_mode() == RENDER_WIREFRAME_AND_RED_DOT_VERTEX)
+		enum Render_mode selected_render_mode = get_render_mode();
+
+		if (selected_render_mode == RENDER_WIREFRAME_AND_RED_DOT_VERTEX)
 		{
 			draw_triangle(&triangle, wire_color);
-			draw_rect(triangle.points[0].x-3, triangle.points[0].y-3, 6, 6, 0xffff0000);
-			draw_rect(triangle.points[1].x-3, triangle.points[1].y-3, 6, 6, 0xffff0000);
-			draw_rect(triangle.points[2].x-3, triangle.points[2].y, 6, 6, 0xffff0000);
-	
+			draw_rect(triangle.points[0].x - 3, triangle.points[0].y - 3, 6, 6, 0xffff0000);
+			draw_rect(triangle.points[1].x - 3, triangle.points[1].y - 3, 6, 6, 0xffff0000);
+			draw_rect(triangle.points[2].x - 3, triangle.points[2].y, 6, 6, 0xffff0000);
+
 		}
-		else if (get_render_mode() == RENDER_WIREFRAME)
+		else if (selected_render_mode == RENDER_WIREFRAME)
 		{
 			draw_triangle(&triangle, wire_color);
 		}
-		else if (get_render_mode() == RENDER_FILLED_TRIANGLES_SOLID_COLOR)
+		else if (selected_render_mode == RENDER_FILLED_TRIANGLES_SOLID_COLOR)
 		{
 			draw_filled_triangle(&triangle, triangle.color);
 		}
-		else if (get_render_mode() == RENDER_FILLED_AND_WIREFRAME)
+		else if (selected_render_mode == RENDER_FILLED_AND_WIREFRAME)
 		{
 			draw_filled_triangle(&triangle, triangle.color);
 
 			draw_triangle(&triangle, wire_color);
 		}
-		else if (get_render_mode() == RENDER_TEXTURED)
+		else if (selected_render_mode == RENDER_TEXTURED)
 		{
 
 			draw_textured_triangle(&triangle);
-			
+
 		}
-		else if (get_render_mode() == RENDER_TEXTURED_AND_WIREFRAME)
+		else if (selected_render_mode == RENDER_TEXTURED_AND_WIREFRAME)
 		{
 			draw_textured_triangle(&triangle);
 			draw_triangle(&triangle, wire_color);
 		}
+		else if (selected_render_mode == RENDER_FILLED_PARALLEL)
+		{
+			draw_filled_triangle_parallel(&triangle, triangle.color);
+		}
+
 
 	}
 

@@ -1,6 +1,8 @@
 #include "triangle.h"
 #include "display.h"
 #include "swap.h"
+
+
 //
 
 
@@ -525,9 +527,31 @@ void draw_filled_triangle_points(
 		}
 	}
 
+}
 
-	
+void draw_filled_triangle_parallel(triangle_t* triangle, uint32_t color)
+{
 
+	int x_min = fmin(fmin(triangle->points[0].x, triangle->points[1].x), triangle->points[2].x);
+	int y_min = fmin(fmin(triangle->points[0].y, triangle->points[1].y), triangle->points[2].y);
 
+	int x_max = fmax(fmax(triangle->points[0].x, triangle->points[1].x), triangle->points[2].x);
+	int y_max = fmax(fmax(triangle->points[0].y, triangle->points[1].y), triangle->points[2].y);
+
+	for (int y = y_min; y <= y_max; y++) {
+		for (int x = x_min; x <= x_max; x++) {
+			vect2_t p = { x, y };
+
+			int w0 = edge_cross(&(triangle->points[1]), &(triangle->points[2]), &p);
+			int w1 = edge_cross(&(triangle->points[2]), &(triangle->points[0]), &p);
+			int w2 = edge_cross(&(triangle->points[0]), &(triangle->points[1]), &p);
+
+			bool is_inside = w0 >= 0 && w1 >= 0 && w2 >= 0;
+
+			if (is_inside) {
+				draw_triangle_pixel(x, y, triangle->points[0], triangle->points[1], triangle->points[2], color);
+			}
+		}
+	}
 
 }
