@@ -402,6 +402,17 @@ vect3_t get_triangle_normal(vect4_t vertices[3])
 	return normal;
 }
 
+bool is_top_or_left_edge(vect4_t* start, vect4_t* end)
+{
+	vect2_t edge = { end->x - start->x, end->y - start->y };
+
+	//this works because we look at edges in a clock wise direction only
+	bool is_top_edge = edge.y == 0 && edge.x > 0;
+	bool is_left_edge = edge.y < 0;
+
+	return is_top_edge || is_left_edge;
+}
+
 
 void draw_filled_triangle(triangle_t *triangle, uint32_t color)
 {
@@ -532,26 +543,63 @@ void draw_filled_triangle_points(
 void draw_filled_triangle_parallel(triangle_t* triangle, uint32_t color)
 {
 
-	int x_min = fmin(fmin(triangle->points[0].x, triangle->points[1].x), triangle->points[2].x);
-	int y_min = fmin(fmin(triangle->points[0].y, triangle->points[1].y), triangle->points[2].y);
+	vect4_t v0 = triangle->points[0];
+	vect4_t v1 = triangle->points[1];
+	vect4_t v2 = triangle->points[2];
 
-	int x_max = fmax(fmax(triangle->points[0].x, triangle->points[1].x), triangle->points[2].x);
-	int y_max = fmax(fmax(triangle->points[0].y, triangle->points[1].y), triangle->points[2].y);
 
-	for (int y = y_min; y <= y_max; y++) {
-		for (int x = x_min; x <= x_max; x++) {
-			vect2_t p = { x, y };
 
-			int w0 = edge_cross(&(triangle->points[1]), &(triangle->points[2]), &p);
-			int w1 = edge_cross(&(triangle->points[2]), &(triangle->points[0]), &p);
-			int w2 = edge_cross(&(triangle->points[0]), &(triangle->points[1]), &p);
+	int x_min = floor(fmin(fmin(triangle->points[0].x, triangle->points[1].x), triangle->points[2].x));
+	int y_min = floor(fmin(fmin(triangle->points[0].y, triangle->points[1].y), triangle->points[2].y));
+
+	int x_max = ceil(fmax(fmax(triangle->points[0].x, triangle->points[1].x), triangle->points[2].x));
+	int y_max = ceil(fmax(fmax(triangle->points[0].y, triangle->points[1].y), triangle->points[2].y));
+
+	float bias0 = is_top_or_left_edge(&triangle->points[1], &triangle->points[2]) ? 0 : -0.0001;
+	float bias1 = is_top_or_left_edge(&triangle->points[2], &triangle->points[0]) ? 0 : -0.0001;
+	float bias2 = is_top_or_left_edge(&triangle->points[0], &triangle->points[1]) ? 0 : -0.0001;
+
+
+	float delta_w0_col = (v1.y - v2.y);
+	float delta_w1_col = (v2.y - v0.y);
+	float delta_w2_col = (v0.y - v1.y);
+
+	float delta_w0_row = (v2.x - v1.x);
+	float delta_w1_row = (v0.x - v2.x);
+	float delta_w2_row = (v1.x - v0.x);
+
+	vect2_t p0 = { x_min, y_min };
+	float w0_row = edge_cross(&v1, &v2, &p0) + bias0;
+	float w1_row = edge_cross(&v2, &v0, &p0) + bias1;
+	float w2_row = edge_cross(&v0, &v1, &p0) + bias2;
+
+	for (int y = y_min; y <= y_max; y++) 
+	{
+
+
+		float w0 = w0_row;
+		float w1 = w1_row;
+		float w2 = w2_row;
+
+
+		for (int x = x_min; x <= x_max; x++) 
+		{
 
 			bool is_inside = w0 >= 0 && w1 >= 0 && w2 >= 0;
 
 			if (is_inside) {
 				draw_triangle_pixel(x, y, triangle->points[0], triangle->points[1], triangle->points[2], color);
 			}
+
+			w0 += delta_w0_col;
+			w1 += delta_w1_col;
+			w2 += delta_w2_col;
 		}
+
+		w0_row += delta_w0_row;
+		w1_row += delta_w1_row;
+		w2_row += delta_w2_row;
 	}
+
 
 }

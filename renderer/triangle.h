@@ -5,6 +5,7 @@
 #include "vector.h"
 #include "texture.h"
 #include "png_info.h"
+#include <stdbool.h>
 
 typedef struct
 {
@@ -67,5 +68,8 @@ void draw_textured_triangle_points(
 	png_info_t* texture);
 
 vect3_t get_triangle_normal(vect4_t vertices[3]);
+
+bool is_top_or_left_edge(vect4_t* start, vect4_t* end);
+
 
 #endif // !TRIANGLE_H
